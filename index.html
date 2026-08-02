@@ -413,16 +413,20 @@ function renderDayHead(){
 
 function renderBody(){
   var body=document.getElementById("body");if(!body)return;
+  // the old #map node is about to be discarded — tear down its Leaflet instance
+  // so updateMap() re-initialises on the fresh node instead of orphaning it
+  if(map){try{map.remove();}catch(e){} map=null; markerLayer=null;}
   body.innerHTML="";
   body.appendChild(renderMapCard());
   var seg=el('<div class="seg"></div>');
   [["stops","▤ Stops"],["route","➟ Route"]].forEach(function(p){
     var b=el('<button class="'+(ui.mode===p[0]?"on":"")+'">'+p[1]+'</button>');
-    b.onclick=function(){ui.mode=p[0];renderBody();updateMap();};seg.appendChild(b);
+    b.onclick=function(){ui.mode=p[0];renderBody();};seg.appendChild(b);
   });
   body.appendChild(seg);
   if(ui.mode==="stops"){body.appendChild(renderNotes());body.appendChild(renderStops());body.appendChild(renderAdd());}
   else body.appendChild(renderRoute());
+  updateMap();
 }
 
 function renderMapCard(){
@@ -468,7 +472,13 @@ function renderCard(s,d,t){
   var top=el('<div class="top"></div>');
   var grip=el('<button class="grip" aria-label="Drag">⠿</button>');
   var check=el('<button class="check'+(s.done?" on":"")+'">'+(s.done?'<span style="color:#fff;font-weight:900">✓</span>':'')+'</button>');
-  check.onclick=function(){s.done=!s.done;save();render();updateMap();};
+  check.onclick=function(){
+    s.done=!s.done;save();
+    card.classList.toggle("done",s.done);
+    check.className="check"+(s.done?" on":"");
+    check.innerHTML=s.done?'<span style="color:#fff;font-weight:900">✓</span>':'';
+    updateCounts();
+  };
   var thumb=el('<div class="thumb'+((!s.img)?" loading":"")+'"></div>');
   thumb.appendChild(el('<div class="tile" style="background:'+cat.tint+'">'+cat.emoji+'</div>'));
   if(s.img){var img=document.createElement("img");img.src=s.img;img.alt="";img.loading="lazy";
@@ -615,6 +625,13 @@ function enableDrag(list,d){
 }
 function renderRouteIfNeeded(){if(ui.mode==="route")renderBody();}
 function refreshTabsCounts(){/* counts unaffected by reorder */}
+function updateCounts(){
+  var t=trip();if(!t)return;
+  var done=0,total=0;t.days.forEach(function(d){d.stops.forEach(function(s){total++;if(s.done)done++;});});
+  var sub=document.querySelector("header .sub");if(sub)sub.textContent=t.days.length+" days · "+done+"/"+total+" done";
+  var tabs=document.querySelectorAll(".tabs .tab");var d=day();
+  if(tabs[ui.dayIdx]){var cnt=tabs[ui.dayIdx].querySelector(".cnt");if(cnt&&d)cnt.textContent=d.stops.filter(function(s){return s.done;}).length+"/"+d.stops.length;}
+}
 
 /* ============================ trip/day ops ============================ */
 function addDay(){var t=trip();t.days.push({id:uid(),label:"Day "+(t.days.length+1),notes:"",stops:[]});save();render();}
@@ -679,7 +696,6 @@ function softRefresh(){
   var lab=document.querySelector(".maproute .lab");
   if(lab&&d){var located=d.stops.filter(function(s){return s.lat!=null;}).length;lab.textContent=located+"/"+d.stops.length+" stops mapped";}
   updateMap();
-  if(ui.mode==="route")renderBody();
 }
 
 /* ============================ boot ============================ */
