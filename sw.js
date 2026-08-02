@@ -1,6 +1,6 @@
 /* Trip Itinerary service worker */
-var SHELL="itinerary-shell-v1";
-var RUNTIME="itinerary-runtime-v1";
+var SHELL="itinerary-shell-v2";
+var RUNTIME="itinerary-runtime-v2";
 var PRECACHE=[
   "./","./index.html",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
@@ -10,7 +10,7 @@ self.addEventListener("install",function(e){
   self.skipWaiting();
   e.waitUntil(caches.open(SHELL).then(function(c){
     return Promise.all(PRECACHE.map(function(u){
-      return fetch(u,{mode:"no-cors"}).then(function(r){return c.put(u,r);}).catch(function(){});
+      return fetch(u).then(function(r){return c.put(u,r);}).catch(function(){});
     }));
   }));
 });
