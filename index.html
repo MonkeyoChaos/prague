@@ -694,7 +694,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   a{color:inherit}
   .mono{font-family:var(--mono)}
 
-  header{position:sticky;top:0;z-index:30;background:var(--surface);border-bottom:1px solid var(--line);
+  header{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,#128C86,#0B5450);color:#fff;border-bottom:1px solid #0B5450;
     padding:14px 16px 12px;padding-top:calc(14px + env(safe-area-inset-top))}
   .eyebrow{font-family:var(--mono);color:var(--primary);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
   .tripname{display:flex;align-items:center;gap:4px;max-width:100%}
@@ -791,6 +791,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .empty{text-align:center;color:var(--inkSoft);font-size:14px;padding:34px 10px}
   .leaflet-container{font-family:var(--sans)}
   .pin{background:var(--primary);color:#fff;font-weight:800;border-radius:50% 50% 50% 0;transform:rotate(-45deg);width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  header .eyebrow{color:#CFECE9}
+  header .sub{color:#DDEDEB;opacity:.92}
+  header .tripname h1{color:#fff}
+  header .tripname span{color:#DDEDEB}
+  header .iconbtn{color:#EAF4F2}
+  .switch{color:var(--ink)}
+  .titlerow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .chev{color:var(--inkSoft);font-size:11px;flex:none;cursor:pointer;padding-left:4px}
+  .catpill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:5px}
+  .card.exp{box-shadow:0 8px 20px rgba(22,32,43,.10)}
+  .expander{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+  .desc{font-size:14px;line-height:1.45;color:var(--ink)}
+  .desc.muted{color:var(--inkSoft);font-style:italic}
+  .gallery{display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .gallery img{height:100px;width:auto;border-radius:10px;flex:none;background:#e6e9eb}
+  .more{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:#3B4CB8;color:#fff;font-weight:600;font-size:14px;border-radius:10px;padding:9px 13px}
   .pin span{transform:rotate(45deg);font-size:12px}
 </style>
 </head>
@@ -892,7 +908,7 @@ function seedPrague(){
 
 /* ============================ state ============================ */
 var state={trips:[],activeId:null};
-var ui={dayIdx:0,mode:"stops",switcher:false,modal:null,notesOpen:false};
+var ui={dayIdx:0,mode:"stops",switcher:false,modal:null,notesOpen:false,expanded:{}};
 
 function normalize(trips){
   return (trips||[]).map(function(t){
@@ -903,6 +919,7 @@ function normalize(trips){
             return {id:s.id||uid(),title:s.title||"Untitled",note:s.note||"",query:s.query||s.title||"",
               wiki:s.wiki||s.query||s.title||"",cat:s.cat||deriveCat(s.title,s.query),
               img:s.img||"",lat:(s.lat===0||s.lat)?s.lat:null,lng:(s.lng===0||s.lng)?s.lng:null,
+              desc:s.desc||"",wikiTitle:s.wikiTitle||"",gallery:Array.isArray(s.gallery)?s.gallery:[],
               done:!!s.done};
           })};
       })};
@@ -933,21 +950,25 @@ function routeUrl(stops,region){
   return u;
 }
 
+function googleUrl(s,region){return "https://www.google.com/search?q="+encodeURIComponent((s.title||"")+" "+(region||""));}
+
 /* ============================ enrichment (photos + coords) ============================ */
 var geoQueue=[],geoBusy=false;
 function enrich(){
   var t=trip();if(!t)return;
   var stops=[];t.days.forEach(function(d){d.stops.forEach(function(s){stops.push(s);});});
   stops.forEach(function(s){
-    if(s._wikiTried||(s.img&&s.lat!=null))return;
+    if(s._wikiTried||(s.img&&s.lat!=null&&s.desc&&s.wikiTitle))return;
     s._wikiTried=true;
     if(!s.wiki){maybeGeo(s);return;}
-    var url="https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrlimit=1&gsrsearch="+encodeURIComponent(s.wiki)+"&prop=pageimages|coordinates&piprop=thumbnail&pithumbsize=500";
+    var url="https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrlimit=1&gsrsearch="+encodeURIComponent(s.wiki)+"&prop=pageimages|coordinates|extracts&piprop=thumbnail&pithumbsize=500&exsentences=3&explaintext=1";
     fetch(url).then(function(r){return r.json();}).then(function(j){
       var pages=j&&j.query&&j.query.pages;var changed=false;
       if(pages){var p=pages[Object.keys(pages)[0]];
         if(p&&p.thumbnail&&p.thumbnail.source&&!s.img){s.img=p.thumbnail.source;changed=true;}
         if(p&&p.coordinates&&p.coordinates[0]&&s.lat==null){s.lat=p.coordinates[0].lat;s.lng=p.coordinates[0].lon;changed=true;}
+        if(p&&p.extract&&!s.desc){s.desc=p.extract;changed=true;}
+        if(p&&p.title&&!s.wikiTitle){s.wikiTitle=p.title;changed=true;}
       }
       if(changed){save();softRefresh();}
       if(s.lat==null)maybeGeo(s);
@@ -967,6 +988,21 @@ function pumpGeo(){
   }).catch(function(){}).then(function(){
     setTimeout(function(){geoBusy=false;pumpGeo();},1100);
   });
+}
+function fetchGallery(s,cb){
+  if(s._galTried||!s.wikiTitle){if(cb)cb();return;}
+  s._galTried=true;
+  fetch("https://en.wikipedia.org/api/rest_v1/page/media-list/"+encodeURIComponent(s.wikiTitle))
+    .then(function(r){return r.json();}).then(function(j){
+      var out=[],seen={};
+      (j.items||[]).forEach(function(it){
+        if(it.type==="image"&&it.srcset&&it.srcset[0]&&it.srcset[0].src){
+          var u=it.srcset[0].src; if(u.indexOf("//")===0)u="https:"+u;
+          if(!/\.svg/i.test(u)&&!seen[u]){seen[u]=1;out.push(u);}
+        }
+      });
+      s.gallery=out.slice(0,6); save(); if(cb)cb();
+    }).catch(function(){ if(cb)cb(); });
 }
 
 /* ============================ Leaflet map ============================ */
@@ -1140,17 +1176,40 @@ function renderStops(){
   return list;
 }
 
+function refreshStops(){
+  if(ui.mode!=="stops")return;
+  var old=document.getElementById("stoplist");if(!old||!old.parentNode)return;
+  var fresh=renderStops();old.parentNode.replaceChild(fresh,old);
+}
+function renderExpander(s,t){
+  var wrap=el('<div class="expander"></div>');
+  if(s.desc)wrap.appendChild(el('<div class="desc">'+escapeHtml(s.desc)+'</div>'));
+  else wrap.appendChild(el('<div class="desc muted">No description saved yet \u2014 open this once while online and it\u2019ll be here offline afterward.</div>'));
+  var imgs=(s.gallery&&s.gallery.length)?s.gallery:(s.img?[s.img]:[]);
+  if(imgs.length){
+    var gal=el('<div class="gallery"></div>');
+    imgs.forEach(function(u){var im=document.createElement("img");im.src=u;im.loading="lazy";im.onerror=function(){this.style.display="none";};gal.appendChild(im);});
+    wrap.appendChild(gal);
+  }
+  if((!s.gallery||!s.gallery.length)&&s.wikiTitle&&!s._galTried){
+    fetchGallery(s,function(){ if(ui.expanded[s.id])refreshStops(); });
+  }
+  var g=el('<a class="more" target="_blank" rel="noopener">\ud83d\udd0e More on Google \u2197</a>');g.href=googleUrl(s,t.region);
+  wrap.appendChild(g);
+  return wrap;
+}
 function renderCard(s,d,t){
   var cat=CATS[s.cat]||CATS.landmark;
-  var card=el('<div class="card'+(s.done?" done":"")+'" data-id="'+s.id+'"></div>');
+  var exp=!!ui.expanded[s.id];
+  var card=el('<div class="card'+(s.done?" done":"")+(exp?" exp":"")+'" data-id="'+s.id+'" style="border-left:4px solid '+cat.color+'"></div>');
   var top=el('<div class="top"></div>');
-  var grip=el('<button class="grip" aria-label="Drag">⠿</button>');
-  var check=el('<button class="check'+(s.done?" on":"")+'">'+(s.done?'<span style="color:#fff;font-weight:900">✓</span>':'')+'</button>');
+  var grip=el('<button class="grip" aria-label="Drag">\u283f</button>');
+  var check=el('<button class="check'+(s.done?" on":"")+'">'+(s.done?'<span style="color:#fff;font-weight:900">\u2713</span>':'')+'</button>');
   check.onclick=function(){
     s.done=!s.done;save();
     card.classList.toggle("done",s.done);
     check.className="check"+(s.done?" on":"");
-    check.innerHTML=s.done?'<span style="color:#fff;font-weight:900">✓</span>':'';
+    check.innerHTML=s.done?'<span style="color:#fff;font-weight:900">\u2713</span>':'';
     updateCounts();updateMap(true);
   };
   var thumb=el('<div class="thumb'+((!s.img)?" loading":"")+'"></div>');
@@ -1158,15 +1217,23 @@ function renderCard(s,d,t){
   if(s.img){var img=document.createElement("img");img.src=s.img;img.alt="";img.loading="lazy";
     img.onerror=function(){this.style.display="none";};thumb.classList.remove("loading");thumb.appendChild(img);}
   var meat=el('<div class="meat"></div>');
-  meat.appendChild(el('<div class="title">'+escapeHtml(s.title)+'</div>'));
+  var titlerow=el('<div class="titlerow"></div>');
+  var title=el('<div class="title">'+escapeHtml(s.title)+'</div>');
+  var chev=el('<span class="chev">'+(exp?"\u25b2":"\u25bc")+'</span>');
+  titlerow.appendChild(title);titlerow.appendChild(chev);
+  meat.appendChild(titlerow);
+  meat.appendChild(el('<div class="catpill" style="color:'+cat.color+';background:'+cat.tint+'">'+cat.emoji+" "+cat.label+'</div>'));
   if(s.note)meat.appendChild(el('<div class="blurb">'+escapeHtml(s.note)+'</div>'));
+  function toggleExp(){ if(ui.expanded[s.id])delete ui.expanded[s.id]; else ui.expanded[s.id]=true; refreshStops(); }
+  thumb.style.cursor="pointer";thumb.onclick=toggleExp;
+  title.style.cursor="pointer";title.onclick=toggleExp;chev.onclick=toggleExp;
   var acts=el('<div class="acts"></div>');
-  var dir=el('<a class="dir" target="_blank" rel="noopener">➤ Directions</a>');dir.href=dirUrl(s.query,t.region);
-  var move=el('<button class="move">→ Move</button>');
+  var dir=el('<a class="dir" target="_blank" rel="noopener">\u27a4 Directions</a>');dir.href=dirUrl(s.query,t.region);
+  var move=el('<button class="move">\u2192 Move</button>');
   var mini=el('<div class="mini"></div>');
-  var edit=el('<button aria-label="Edit">✎</button>');edit.onclick=function(){openEdit(card,s,d,t);};
-  var trash=el('<button class="trash" aria-label="Delete">🗑</button>');
-  trash.onclick=function(){var i=d.stops.indexOf(s);if(i>-1){d.stops.splice(i,1);save();render();updateMap();}};
+  var edit=el('<button aria-label="Edit">\u270e</button>');edit.onclick=function(){openEdit(card,s,d,t);};
+  var trash=el('<button class="trash" aria-label="Delete">\ud83d\uddd1</button>');
+  trash.onclick=function(){var i=d.stops.indexOf(s);if(i>-1){d.stops.splice(i,1);delete ui.expanded[s.id];save();render();updateMap();}};
   mini.appendChild(edit);mini.appendChild(trash);
   acts.appendChild(dir);acts.appendChild(move);acts.appendChild(mini);
   meat.appendChild(acts);
@@ -1181,6 +1248,7 @@ function renderCard(s,d,t){
   meat.appendChild(movebar);
   top.appendChild(grip);top.appendChild(check);top.appendChild(thumb);top.appendChild(meat);
   card.appendChild(top);
+  if(exp)card.appendChild(renderExpander(s,t));
   card._grip=grip;card._stop=s;
   return card;
 }
@@ -1374,6 +1442,7 @@ function softRefresh(){
   });
   var lab=document.querySelector(".maproute .lab");
   if(lab&&d){var located=d.stops.filter(function(s){return s.lat!=null;}).length;lab.textContent=located+"/"+d.stops.length+" stops mapped";}
+  if(ui.expanded&&Object.keys(ui.expanded).length)refreshStops();
   updateMap();
 }
 
