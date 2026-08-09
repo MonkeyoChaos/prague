@@ -781,6 +781,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .leg .num{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;z-index:1}
   .leg .rc{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
   .leg .rc .walk{border:1px solid var(--line);color:var(--primary);font-weight:600;font-size:12px;border-radius:9px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px;margin-top:8px}
+  .leg .rhandle{align-self:center;flex:none;color:var(--inkSoft);touch-action:none;cursor:grab;padding:10px 6px;font-size:18px;line-height:1;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  .leg.dragging{opacity:.92}
+  .leg.dragging .rc{border-color:var(--primary);box-shadow:0 8px 20px rgba(22,32,43,.16)}
 
   /* modal */
   .scrim{position:fixed;inset:0;background:rgba(22,32,43,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
@@ -1229,7 +1232,6 @@ function renderStops(){
   var list=el('<div id="stoplist"></div>');
   if(!d.stops.length)list.appendChild(el('<div class="empty">Nothing here yet. Add your first stop below.</div>'));
   d.stops.forEach(function(s){list.appendChild(renderCard(s,d,t));});
-  enableDrag(list,d);
   return list;
 }
 
@@ -1293,7 +1295,7 @@ function renderCard(s,d,t){
   meat.appendChild(pills);
   if(s.note)meat.appendChild(el('<div class="blurb">'+escapeHtml(s.note)+'</div>'));
   function toggleExp(){ if(ui.expanded[s.id])delete ui.expanded[s.id]; else ui.expanded[s.id]=true; refreshStops(); }
-  thumb.style.cursor="grab";
+  thumb.style.cursor="pointer";
   thumb.onclick=function(){ if(card._dragged){card._dragged=false;return;} toggleExp(); };
   title.style.cursor="pointer";title.onclick=function(){focusStopOnMap(s);};chev.onclick=toggleExp;
   var acts=el('<div class="acts"></div>');
@@ -1414,7 +1416,7 @@ function renderRoute(){
   if(!d.stops.length){wrap.appendChild(el('<div class="empty">Add stops to build a route.</div>'));return wrap;}
   d.stops.forEach(function(s,i){
     var cat=CATS[s.cat]||CATS.landmark;
-    var leg=el('<div class="leg"></div>');
+    var leg=el('<div class="leg" data-id="'+s.id+'"></div>');
     if(i<d.stops.length-1)leg.appendChild(el('<div class="line"></div>'));
     leg.appendChild(el('<div class="num" style="background:'+(s.done?"#9AA6AE":cat.color)+'">'+(s.done?"\u2713":(i+1))+'</div>'));
     var rc=el('<div class="rc"></div>');
@@ -1423,9 +1425,42 @@ function renderRoute(){
     var acts=el('<div class="acts" style="margin-top:8px"></div>');
     if(i>0){var walk=el('<a class="walk" target="_blank" rel="noopener">→ Walk from #'+i+'</a>');walk.href=legUrl(d.stops[i-1],s,t.region);acts.appendChild(walk);}
     var dh=el('<a class="walk" style="border-color:transparent" target="_blank" rel="noopener">➤ Directions here</a>');dh.href=dirUrl(s.query,t.region);acts.appendChild(dh);
-    rc.appendChild(acts);leg.appendChild(rc);wrap.appendChild(leg);
+    rc.appendChild(acts);leg.appendChild(rc);
+    var handle=el('<button class="rhandle" aria-label="Drag to reorder">\u283f</button>');leg.appendChild(handle);
+    wrap.appendChild(leg);
   });
+  enableRouteDrag(wrap,d);
   return wrap;
+}
+function enableRouteDrag(wrap,d){
+  wrap.querySelectorAll(".rhandle").forEach(function(handle){
+    var leg=handle.parentNode;if(!leg)return;
+    handle.addEventListener("pointerdown",function(e){
+      e.preventDefault();if(e.button&&e.button!==0)return;
+      leg.classList.add("dragging");
+      try{handle.setPointerCapture(e.pointerId);}catch(_){}
+      function move(ev){
+        ev.preventDefault();
+        var y=ev.clientY;
+        var legs=Array.prototype.slice.call(wrap.querySelectorAll(".leg"));
+        var after=null;
+        for(var i=0;i<legs.length;i++){if(legs[i]===leg)continue;var r=legs[i].getBoundingClientRect();if(y<r.top+r.height/2){after=legs[i];break;}}
+        if(after)wrap.insertBefore(leg,after);else wrap.appendChild(leg);
+      }
+      function up(){
+        leg.classList.remove("dragging");
+        document.removeEventListener("pointermove",move,true);
+        document.removeEventListener("pointerup",up,true);
+        document.removeEventListener("pointercancel",up,true);
+        var ids=Array.prototype.slice.call(wrap.querySelectorAll(".leg")).map(function(l){return l.getAttribute("data-id");});
+        d.stops.sort(function(a,b){return ids.indexOf(a.id)-ids.indexOf(b.id);});
+        save();renderBody();
+      }
+      document.addEventListener("pointermove",move,true);
+      document.addEventListener("pointerup",up,true);
+      document.addEventListener("pointercancel",up,true);
+    });
+  });
 }
 
 /* ============================ drag reorder ============================ */
