@@ -2,7 +2,7 @@
    Leaflet is inlined in index.html, so there is no external script to cache/break.
    Own files: network-first (updates always land online, cache serves offline).
    Tiles/photos/APIs: cached as viewed for offline reuse. */
-var VER="v6", SHELL="itin-shell-"+VER, RUNTIME="itin-rt-"+VER;
+var VER="v7", SHELL="itin-shell-"+VER, RUNTIME="itin-rt-"+VER;
 self.addEventListener("install",function(e){
   self.skipWaiting();
   e.waitUntil(caches.open(SHELL).then(function(c){return c.addAll(["./","./index.html"]).catch(function(){});}));

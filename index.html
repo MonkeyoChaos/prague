@@ -784,6 +784,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .leg .rhandle{align-self:center;flex:none;color:var(--inkSoft);touch-action:none;cursor:grab;padding:10px 6px;font-size:18px;line-height:1;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
   .leg.dragging{opacity:.92}
   .leg.dragging .rc{border-color:var(--primary);box-shadow:0 8px 20px rgba(22,32,43,.16)}
+  .optwrap{margin-top:8px}
+  .opttoggle{width:100%;text-align:left;background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:11px 14px;font-weight:700;color:var(--inkSoft);font-size:14px}
+  .optlist{margin-top:8px}
+  .optcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+  .optrow{display:flex;align-items:stretch}
+  .othumb{flex:none;width:66px;align-self:stretch;min-height:66px;position:relative;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}
+  .othumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .omeat{flex:1;min-width:0;padding:9px 11px}
+  .otitle{font-weight:600;font-size:14px;line-height:1.25}
+  .opillrow{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+  .otag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .oblurb{color:var(--inkSoft);font-size:12px;margin-top:4px;line-height:1.3}
+  .oacts{display:flex;gap:10px;align-items:center;margin-top:8px}
+  .oadd{background:var(--primary);color:#fff;font-weight:700;font-size:12px;border-radius:8px;padding:6px 11px}
+  .odir{color:var(--primary);font-weight:600;font-size:12px}
+  .pin.opt{background:#fff !important;transform:none;border-radius:50%;width:24px;height:24px;font-size:13px;color:inherit;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 
   /* modal */
   .scrim{position:fixed;inset:0;background:rgba(22,32,43,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
@@ -847,7 +863,8 @@ var CATS={
   park:{label:"Park / Garden",emoji:"🌳",color:"#3F7D3A",tint:"#E9F2E6"},
   church:{label:"Church",emoji:"⛪",color:"#7A6A55",tint:"#EFEBE3"},
   view:{label:"View / Tower",emoji:"🗼",color:"#2F6DAA",tint:"#E7EFF7"},
-  daytrip:{label:"Day trip",emoji:"🚆",color:"#C25A3A",tint:"#F7E9E3"}
+  daytrip:{label:"Day trip",emoji:"🚆",color:"#C25A3A",tint:"#F7E9E3"},
+  shopping:{label:"Shopping",emoji:"🛍️",color:"#B0567F",tint:"#F7E6EF"}
 };
 var CAT_KEYS=Object.keys(CATS);
 
@@ -855,6 +872,7 @@ function uid(){return (crypto&&crypto.randomUUID)?crypto.randomUUID():"id-"+Date
 function deriveCat(t,q){
   var s=((t||"")+" "+(q||"")).toLowerCase();
   if(q&&q.indexOf(",")>-1)return"daytrip";
+  if(/(mall|shopping|palladium|department store)/.test(s))return"shopping";
   if(/(café|cafe|dinner|lunch|lokál|lokal|pivovar|restaurant|market|beer|coffee|savoy|brunch|bar\b)/.test(s))return"food";
   if(/(museum|gallery|galer|mucha|dox|kampa|veletržní|veletrzni|communism|\bart\b)/.test(s))return"art";
   if(/(garden|zahrada|sady|park|petřín|petrin|grébovka|grebovka|hill)/.test(s))return"park";
@@ -864,88 +882,112 @@ function deriveCat(t,q){
 }
 
 function seedPrague(){
-  function D(label,arr){return {id:uid(),label:label,notes:"",stops:arr.map(function(s){
-    return {id:uid(),title:s.t,note:s.n||"",query:s.q||s.t,wiki:s.w||(s.q||s.t),cat:deriveCat(s.t,s.q),img:"",lat:null,lng:null,done:false};
-  })};}
-  return {id:uid(),name:"Prague",region:"Praha, Czechia",days:[
-    D("Day 1",[
+  function mk(s){return {id:uid(),title:s.t,note:s.n||"",query:s.q||s.t,wiki:s.w||(s.q||s.t),
+    cat:s.c||deriveCat(s.t,s.q),img:"",lat:null,lng:null,book:s.b||"",booked:false,bookUrl:"",
+    tag:s.tag||"",area:s.area||"",done:false};}
+  function D(label,area,notes,arr){return {id:uid(),label:label,area:area,notes:notes||"",stops:arr.map(mk)};}
+  return {id:uid(),name:"Prague",region:"Praha, Czechia",
+    optionals:[
+      mk({t:"Adria Palace (Palác Adria)",n:"Rondo-cubist / Art Deco palace",q:"Palác Adria Praha",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"Bank of the Legions (Banka Legií)",n:"Gočár's famous rondo-cubist facade",q:"Banka legií Praha",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"Prague Municipal Library",n:"Roith's 1920s Art Deco building",q:"Městská knihovna v Praze",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"House of the Black Madonna + Grand Café Orient",n:"Cubist landmark + the only Cubist café",q:"House of the Black Madonna Prague",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"Palác Koruna",n:"Late Art Nouveau palace with a glass dome",q:"Palác Koruna Praha",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"Palác Lucerna",n:"Art Deco arcade (the paternoster lives here)",q:"Palác Lucerna Praha",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"Mayor's Residence",n:"Preserved Art Deco interior — rarely open",q:"Mariánské náměstí Praha",c:"landmark",tag:"Art Deco",area:"Old Town"}),
+      mk({t:"Palác Akropolis",n:"Art Deco cultural venue in Žižkov",q:"Palác Akropolis Praha",c:"landmark",tag:"Art Deco",area:"Holešovice & Žižkov"}),
+      mk({t:"Museum of Alchemists and Magicians of Old Prague",n:"Quirky alchemy / occult museum",q:"Museum of Alchemists and Magicians of Old Prague",c:"art",tag:"Quirky",area:"Old Town"}),
+      mk({t:"Karlštejn Castle",n:"Alt day trip — hilltop castle (closed Mondays)",q:"Karlštejn Castle, Karlštejn",c:"landmark",b:"ticket",tag:"Alt day trip",area:"Kutná Hora"})
+    ],
+    days:[
+    D("Thu · Old Town","Old Town","Land 9am — jet-lag day. The core is walkable; use Move to bump the back half to another day if you fade. Art Deco optionals are all in this area.",[
       {t:"Old Town Square + Astronomical Clock",n:"Orloj show on the hour; heart of the old city",q:"Staroměstské náměstí",w:"Old Town Square Prague"},
-      {t:"Old Town Hall Tower",n:"Climb for the best rooftop view over the square",q:"Old Town Hall Tower Prague",w:"Old Town Hall Prague"},
+      {t:"Old Town Hall Tower",n:"Best rooftop view over the square",q:"Old Town Hall Tower Prague",w:"Old Town Hall Prague",b:"ticket"},
       {t:"Church of St. James the Greater",n:"Baroque interior + the 400-yr-old thief's arm",q:"Bazilika svatého Jakuba Většího Praha",w:"Church of St James Prague"},
-      {t:"The Idiom (book tower)",n:"Infinite mirrored book tower in the library — free",q:"Městská knihovna v Praze",w:"Municipal Library of Prague"},
-      {t:"Josefov — Jewish Quarter",n:"Combined ticket; some sights close on Jewish holidays ~Sep 26–27",q:"Spanish Synagogue Prague",w:"Spanish Synagogue Prague"},
-      {t:"Municipal House + Powder Tower",n:"Art Nouveau landmark beside the Gothic gate",q:"Obecní dům Praha",w:"Municipal House Prague"},
-      {t:"Dinner — Lokál Dlouhááá",n:"Tank Pilsner + Czech pub classics",q:"Lokál Dlouhá",w:"Lokál Dlouhá Prague restaurant"}
+      {t:"Speculum Alchemiae",n:"Hidden underground alchemist's lab & museum",q:"Speculum Alchemiae Prague",w:"Speculum Alchemiae",c:"art"},
+      {t:"Municipal House + Powder Tower",n:"Art Nouveau hall beside the Gothic gate",q:"Obecní dům Praha",w:"Municipal House Prague",c:"landmark"},
+      {t:"Palladium",n:"Big central mall on náměstí Republiky",q:"Palladium Praha náměstí Republiky",w:"Palladium Prague",c:"shopping"},
+      {t:"Hotel Imperial (Café Imperial)",n:"Art Deco café with a lavish tiled interior",q:"Café Imperial Prague",w:"Hotel Imperial Prague",c:"food"},
+      {t:"Charles Bridge",n:"Go at golden hour",q:"Karlův most",w:"Charles Bridge"},
+      {t:"Lennon Wall",n:"Ever-changing mural in Malá Strana",q:"Lennonova zeď",w:"Lennon Wall Prague"},
+      {t:"Dinner — Lokál Dlouhá",n:"Tank Pilsner + Czech pub classics",q:"Lokál Dlouhá",w:"Lokál Dlouhá Prague restaurant",b:"reservation"}
     ]),
-    D("Day 2",[
-      {t:"Prague Castle",n:"St. Vitus, Old Royal Palace, Golden Lane",q:"Pražský hrad",w:"Prague Castle"},
-      {t:"Strahov Monastery Library",n:"The jaw-dropping Baroque library halls",q:"Strahovský klášter",w:"Strahov Monastery"},
+    D("Fri · Castle & Malá Strana","Castle & Malá Strana","",[
+      {t:"Café Savoy",n:"Grand café — superb breakfast/brunch",q:"Café Savoy Praha",w:"Café Savoy Prague",b:"reservation"},
+      {t:"Prague Castle",n:"St. Vitus, Old Royal Palace, Golden Lane",q:"Pražský hrad",w:"Prague Castle",b:"ticket"},
+      {t:"Strahov Monastery Library",n:"The jaw-dropping Baroque library halls",q:"Strahovský klášter",w:"Strahov Monastery",b:"ticket"},
       {t:"Nový Svět lane",n:"Quiet historic street behind the castle",q:"Nový Svět Praha",w:"Nový Svět Prague"},
       {t:"Petřín Lookout Tower",n:"Funicular up, gardens, mini-Eiffel views",q:"Petřínská rozhledna",w:"Petřín Lookout Tower"},
-      {t:"Café Savoy",n:"Grand café — superb breakfast/brunch",q:"Café Savoy Praha",w:"Café Savoy Prague"}
-    ]),
-    D("Day 3",[
-      {t:"Charles Bridge",n:"Go early or at golden hour",q:"Karlův most",w:"Charles Bridge"},
-      {t:"Lennon Wall",n:"Ever-changing mural in Malá Strana",q:"Lennonova zeď",w:"Lennon Wall Prague"},
-      {t:"Museum Kampa",n:"Modern Czech art on the riverbank",q:"Museum Kampa",w:"Museum Kampa"},
       {t:"Wallenstein Garden",n:"Free Baroque garden, peacocks, dripstone wall",q:"Valdštejnská zahrada",w:"Wallenstein Palace Prague"},
       {t:"Vrtba Garden",n:"Terraced Baroque garden with city views",q:"Vrtbovská zahrada",w:"Vrtba Garden"},
-      {t:"Franz Kafka rotating head",n:"Černý's mirrored kinetic sculpture",q:"Hlava Franze Kafky",w:"Head of Franz Kafka"},
-      {t:"Náplavka riverfront",n:"Evening beer & wine along the embankment",q:"Náplavka Praha",w:"Náplavka Prague riverfront"}
+      {t:"Vojan Gardens",n:"Walled Baroque garden near the river",q:"Vojanovy sady",w:"Vojan Gardens Prague"}
     ]),
-    D("Day 4",[
+    D("Sat · Vinohrady & Vyšehrad","Vinohrady & Vyšehrad","Sat-only: Náplavka market (morning). Optional detour: Troja Botanical Garden wine fest (Sep 12–13).",[
+      {t:"Náplavka Farmers' Market",n:"Saturday riverside market — autumn produce & wine",q:"Náplavka Farmers Market Rašínovo nábřeží",w:"Náplavka Prague"},
+      {t:"Lunch — Bistro Špejle",n:"Casual bistro stop",q:"Bistro Špejle Praha",w:"",c:"food",b:"reservation"},
+      {t:"Vyšehrad",n:"Fortress, casemates, cemetery, rotunda",q:"Vyšehrad",w:"Vyšehrad"},
+      {t:"Havlíčkovy sady (Grébovka)",n:"Vineyard park + Grotto folly",q:"Havlíčkovy sady Grébovka",w:"Havlíčkovy sady",c:"park"},
+      {t:"Dinner — Vinohradský pivovar",n:"Local microbrewery in Vinohrady",q:"Vinohradský pivovar",w:"Vinohradský pivovar Prague",b:"reservation"}
+    ]),
+    D("Sun · Holešovice & Žižkov","Holešovice & Žižkov","",[
       {t:"National Gallery — Veletržní Palác",n:"Modern/contemporary; Mucha's Slav Epic",q:"Veletržní palác",w:"Veletržní Palác"},
-      {t:"Mucha Museum",n:"Alfons Mucha's Art Nouveau, small and focused",q:"Mucha Museum Prague",w:"Mucha Museum"},
-      {t:"Museum of Communism",n:"Substantive Soviet-era history",q:"Museum of Communism Prague",w:"Museum of Communism Prague"},
       {t:"Žižkov TV Tower",n:"Černý's crawling babies + panorama deck",q:"Žižkovská věž",w:"Žižkov Television Tower"},
-      {t:"DOX Centre for Contemporary Art",n:"Edgy contemporary space in Holešovice",q:"DOX Praha",w:"DOX Centre for Contemporary Art"}
-    ]),
-    D("Day 5",[
-      {t:"Sedlec Ossuary (bone church)",n:"Day trip — ~1 hr by train",q:"Sedlec Ossuary, Kutná Hora",w:"Sedlec Ossuary"},
-      {t:"Cathedral of St. Barbara",n:"Gothic masterpiece in Kutná Hora",q:"Cathedral of St. Barbara, Kutná Hora",w:"St Barbara's Church Kutná Hora"}
-    ]),
-    D("Day 6",[
-      {t:"Vyšehrad",n:"Fortress, casemates, cemetery (Dvořák, Smetana), rotunda",q:"Vyšehrad",w:"Vyšehrad"},
-      {t:"Havlíčkovy sady (Grébovka)",n:"Park + Grotto folly; wine-harvest festival late Sept",q:"Havlíčkovy sady Grébovka",w:"Havlíčkovy sady"},
-      {t:"Paternoster elevator — Lucerna",n:"Doorless continuous loop elevator — free & weird",q:"Palác Lucerna Praha",w:"Lucerna Palace"},
-      {t:"Náplavka Farmers' Market",n:"Saturdays — autumn produce & Czech wines",q:"Náplavka Farmers Market Rašínovo nábřeží",w:"Náplavka Prague"},
-      {t:"Dinner — Vinohradský pivovar",n:"Local microbrewery in Vinohrady",q:"Vinohradský pivovar",w:"Vinohradský pivovar Prague"}
-    ]),
-    D("Day 7",[
-      {t:"Karlštejn Castle",n:"Optional day trip — hilltop castle, ~40 min train",q:"Karlštejn Castle, Karlštejn",w:"Karlštejn Castle"},
-      {t:"Cold War nuclear bunker tour",n:"20th-c. history — book ahead",q:"Nuclear Bunker Parukářka Praha",w:"Bunker Parukářka Prague"},
+      {t:"Cold War nuclear bunker tour",n:"Soviet-era fallout shelter — book ahead",q:"Nuclear Bunker Parukářka Praha",w:"Bunker Parukářka Prague",b:"reservation"},
+      {t:"Franz Kafka rotating head",n:"Černý's mirrored kinetic sculpture",q:"Hlava Franze Kafky",w:"Head of Franz Kafka"},
+      {t:"Paternoster elevator (Lucerna)",n:"Doorless continuous loop elevator — free & weird",q:"Palác Lucerna Praha",w:"Lucerna Palace",c:"landmark"},
       {t:"Dancing House rooftop",n:"Gehry landmark; drink with a view",q:"Tančící dům",w:"Dancing House"},
-      {t:"Flex / buffer",n:"Catch anything pushed forward from earlier days",q:"Prague",w:""}
+      {t:"Náplavka riverfront",n:"Evening beer & wine along the embankment",q:"Náplavka Praha",w:"Náplavka Prague riverfront",c:"food"}
+    ]),
+    D("Mon · Kutná Hora","Kutná Hora","Monday-safe day trip (National Gallery & Karlštejn are closed Mondays). Train ~1 hr each way.",[
+      {t:"Sedlec Ossuary (bone church)",n:"Chapel decorated with tens of thousands of bones",q:"Sedlec Ossuary, Kutná Hora",w:"Sedlec Ossuary",b:"ticket"},
+      {t:"Cathedral of St. Barbara",n:"Soaring Gothic cathedral",q:"Cathedral of St. Barbara, Kutná Hora",w:"St Barbara's Church Kutná Hora",b:"ticket"}
     ])
   ]};
 }
 
 /* ============================ state ============================ */
 var state={trips:[],activeId:null};
-var ui={dayIdx:0,mode:"stops",switcher:false,modal:null,notesOpen:false,expanded:{}};
+var ui={dayIdx:0,mode:"stops",switcher:false,modal:null,notesOpen:false,expanded:{},optOpen:{}};
 
+function normStop(s){
+  return {id:s.id||uid(),title:s.title||"Untitled",note:s.note||"",query:s.query||s.title||"",
+    wiki:s.wiki||s.query||s.title||"",cat:s.cat||deriveCat(s.title,s.query),
+    img:s.img||"",lat:(s.lat===0||s.lat)?s.lat:null,lng:(s.lng===0||s.lng)?s.lng:null,
+    desc:s.desc||"",wikiTitle:s.wikiTitle||"",gallery:Array.isArray(s.gallery)?s.gallery:[],
+    book:s.book||"",booked:!!s.booked,bookUrl:s.bookUrl||"",
+    tag:s.tag||"",area:s.area||"",done:!!s.done};
+}
 function normalize(trips){
   return (trips||[]).map(function(t){
     return {id:t.id||uid(),name:t.name||"Untitled trip",region:t.region||"",
+      optionals:(t.optionals||[]).map(normStop),
       days:(t.days||[]).map(function(d){
-        return {id:d.id||uid(),label:d.label||"Day",notes:d.notes||"",
-          stops:(d.stops||[]).map(function(s){
-            return {id:s.id||uid(),title:s.title||"Untitled",note:s.note||"",query:s.query||s.title||"",
-              wiki:s.wiki||s.query||s.title||"",cat:s.cat||deriveCat(s.title,s.query),
-              img:s.img||"",lat:(s.lat===0||s.lat)?s.lat:null,lng:(s.lng===0||s.lng)?s.lng:null,
-              desc:s.desc||"",wikiTitle:s.wikiTitle||"",gallery:Array.isArray(s.gallery)?s.gallery:[],
-              book:s.book||"",booked:!!s.booked,bookUrl:s.bookUrl||"",
-              done:!!s.done};
-          })};
+        return {id:d.id||uid(),label:d.label||"Day",area:d.area||"",notes:d.notes||"",
+          stops:(d.stops||[]).map(normStop)};
       })};
   });
 }
+var SEED_VERSION=2;
 function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
-      state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;seedBookFlags();return;}}
+      state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
+      maybeReseed();seedBookFlags();return;}}
   }catch(e){}
-  state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;seedBookFlags();
+  state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
+  try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
+  seedBookFlags();
+}
+function maybeReseed(){
+  var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
+  if(v>=SEED_VERSION)return;
+  var fresh=normalize([seedPrague()])[0];
+  var idx=-1;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){idx=i;break;}}
+  if(idx>=0){fresh.id=state.trips[idx].id;state.trips[idx]=fresh;}
+  else{state.trips.unshift(fresh);}
+  state.activeId=fresh.id;ui.dayIdx=0;
+  try{localStorage.setItem("seed_version",String(SEED_VERSION));localStorage.removeItem("book_seeded_v1");}catch(e){}
+  save();
 }
 var BOOKSEED=[
   {re:/prague castle|pražský hrad/i,type:"ticket"},
@@ -993,7 +1035,7 @@ function googleUrl(s,region){return "https://www.google.com/search?q="+encodeURI
 var geoQueue=[],geoBusy=false;
 function enrich(){
   var t=trip();if(!t)return;
-  var stops=[];t.days.forEach(function(d){d.stops.forEach(function(s){stops.push(s);});});
+  var stops=[];t.days.forEach(function(d){d.stops.forEach(function(s){stops.push(s);});});(t.optionals||[]).forEach(function(s){stops.push(s);});
   stops.forEach(function(s){
     if(s._wikiTried||(s.img&&s.lat!=null&&s.desc&&s.wikiTitle))return;
     s._wikiTried=true;
@@ -1079,6 +1121,14 @@ function updateMap(skipFit){
     (function(sid){m.on("click",function(){highlightStop(sid);});})(s.id);
   });
   if(latlngs.length>1){L.polyline(latlngs,{color:"#0F6E6A",weight:3,opacity:.7,dashArray:"1 8",lineCap:"round"}).addTo(markerLayer);}
+  if(ui.optOpen&&ui.optOpen[d.id]){
+    optionalsForDay(d).forEach(function(o){
+      if(o.lat==null||o.lng==null)return;
+      var oc=CATS[o.cat]||CATS.landmark;
+      var oi=L.divIcon({className:"",html:'<div class="pin opt" style="border-color:'+oc.color+'">'+oc.emoji+'</div>',iconSize:[24,24],iconAnchor:[12,24],popupAnchor:[0,-22]});
+      L.marker([o.lat,o.lng],{icon:oi}).addTo(markerLayer).bindPopup('<b>'+escapeHtml(o.title)+'</b>'+(o.tag?'<br><i>'+escapeHtml(o.tag)+'</i>':''));
+    });
+  }
   if(pts.length && !skipFit){try{map.fitBounds(L.latLngBounds(pts).pad(0.25),{maxZoom:15});}catch(e){}}
   setTimeout(function(){try{map.invalidateSize();}catch(e){}},60);
 }
@@ -1194,7 +1244,7 @@ function renderBody(){
     b.onclick=function(){ui.mode=p[0];renderBody();};seg.appendChild(b);
   });
   body.appendChild(seg);
-  if(ui.mode==="stops"){body.appendChild(renderNotes());body.appendChild(renderStops());body.appendChild(renderAdd());}
+  if(ui.mode==="stops"){body.appendChild(renderNotes());body.appendChild(renderStops());body.appendChild(renderAdd());body.appendChild(renderOptional());}
   else body.appendChild(renderRoute());
   updateMap();
 }
@@ -1239,6 +1289,58 @@ function refreshStops(){
   if(ui.mode!=="stops")return;
   var old=document.getElementById("stoplist");if(!old||!old.parentNode)return;
   var fresh=renderStops();old.parentNode.replaceChild(fresh,old);
+}
+
+/* ---- optional destinations (area-matched pool) ---- */
+function optionalsForDay(d){
+  var t=trip();if(!t||!t.optionals||!d)return [];
+  return t.optionals.filter(function(o){return o.area&&d.area&&o.area===d.area;});
+}
+function renderOptional(){
+  var d=day();var t=trip();
+  var wrap=el('<div class="optwrap"></div>');
+  var opts=optionalsForDay(d);
+  if(!opts.length)return wrap;
+  var open=!!(ui.optOpen&&ui.optOpen[d.id]);
+  var head=el('<button class="opttoggle">'+(open?"▾":"▸")+' Optional destinations · '+opts.length+'</button>');
+  head.onclick=function(){ui.optOpen[d.id]=!open;renderBody();};
+  wrap.appendChild(head);
+  if(open){
+    var box=el('<div class="optlist"></div>');
+    opts.forEach(function(o){box.appendChild(renderOptionalCard(o,d,t));});
+    wrap.appendChild(box);
+  }
+  return wrap;
+}
+function renderOptionalCard(o,d,t){
+  var cat=CATS[o.cat]||CATS.landmark;
+  var card=el('<div class="optcard" style="border-left:4px solid '+cat.color+'"></div>');
+  var row=el('<div class="optrow"></div>');
+  var thumb=el('<div class="othumb" style="background:'+cat.tint+'">'+(o.img?"":cat.emoji)+'</div>');
+  if(o.img){var img=document.createElement("img");img.src=o.img;img.draggable=false;img.onerror=function(){this.style.display="none";};thumb.appendChild(img);}
+  row.appendChild(thumb);
+  var meat=el('<div class="omeat"></div>');
+  meat.appendChild(el('<div class="otitle">'+escapeHtml(o.title)+'</div>'));
+  var chips=el('<div class="opillrow"></div>');
+  if(o.tag)chips.appendChild(el('<span class="otag" style="color:'+cat.color+';background:'+cat.tint+'">'+escapeHtml(o.tag)+'</span>'));
+  if(o.book)chips.appendChild(el('<span class="otag" style="color:var(--brass);background:var(--brassSoft)">'+(o.book==="reservation"?"📅 Reserve":"🎫 Ticket")+'</span>'));
+  meat.appendChild(chips);
+  if(o.note)meat.appendChild(el('<div class="oblurb">'+escapeHtml(o.note)+'</div>'));
+  var acts=el('<div class="oacts"></div>');
+  var addb=el('<button class="oadd">＋ Add to day</button>');
+  addb.onclick=function(){promoteOptional(o,d);};
+  var dir=el('<a class="odir" target="_blank" rel="noopener">➤ Directions</a>');dir.href=dirUrl(o.query,t.region);
+  acts.appendChild(addb);acts.appendChild(dir);
+  meat.appendChild(acts);
+  row.appendChild(meat);card.appendChild(row);
+  return card;
+}
+function promoteOptional(o,d){
+  var t=trip();if(!t)return;
+  var i=t.optionals.indexOf(o);if(i>-1)t.optionals.splice(i,1);
+  o.done=false;
+  d.stops.push(o);
+  save();renderBody();updateMap(true);
 }
 function renderExpander(s,t){
   var wrap=el('<div class="expander"></div>');
