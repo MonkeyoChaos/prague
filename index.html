@@ -972,11 +972,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();return;}}
+      maybeReseed();seedBookFlags();tidy1();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();
+  seedBookFlags();tidy1();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1012,6 +1012,34 @@ function seedBookFlags(){
   save();
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+/* one-time tidy: lock correct coords for stops that mis-geocode, relocate outliers, order Saturday */
+function tidy1(){
+  try{if(localStorage.getItem("tidy1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){t=state.trips[i];break;}}
+  if(!t){try{localStorage.setItem("tidy1","1");}catch(e){}return;}
+  var COORDS=[
+    {re:/imperial/i,lat:50.0898,lng:14.4327,noWiki:true},
+    {re:/palladium/i,lat:50.0892,lng:14.4290},
+    {re:/farmers.{0,3}market/i,lat:50.0707,lng:14.4141},
+    {re:/vyšehrad/i,lat:50.0642,lng:14.4189},
+    {re:/havlíčkovy|grébovka/i,lat:50.0695,lng:14.4450},
+    {re:/vinohradský pivovar/i,lat:50.0753,lng:14.4576},
+    {re:/špejle|spejle/i,lat:50.0838,lng:14.4284}
+  ];
+  var all=[];t.days.forEach(function(d){d.stops.forEach(function(s){all.push(s);});});(t.optionals||[]).forEach(function(s){all.push(s);});
+  all.forEach(function(s){
+    for(var k=0;k<COORDS.length;k++){if(COORDS[k].re.test(s.title||"")){s.lat=COORDS[k].lat;s.lng=COORDS[k].lng;s._geoTried=true;if(COORDS[k].noWiki){s.wiki="";s._wikiTried=true;}break;}}
+  });
+  var thu=null,sat=null;
+  t.days.forEach(function(d){var a=(d.area||"")+" "+(d.label||"");if(/old town/i.test(a)&&!thu)thu=d;if(/(vinohrady|vyšehrad)/i.test(a)&&!sat)sat=d;});
+  if(sat&&thu&&sat!==thu){
+    for(var j=sat.stops.length-1;j>=0;j--){if(/špejle|spejle/i.test(sat.stops[j].title||"")){thu.stops.push(sat.stops.splice(j,1)[0]);}}
+    var order=[/farmers.{0,3}market/i,/vyšehrad/i,/havlíčkovy|grébovka/i,/pivovar/i];
+    sat.stops.sort(function(a,b){function rank(x){for(var r=0;r<order.length;r++){if(order[r].test(x.title||""))return r;}return order.length;}return rank(a)-rank(b);});
+  }
+  try{localStorage.setItem("tidy1","1");}catch(e){}
+  save();
+}
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
 function day(){var t=trip();if(!t)return null;if(ui.dayIdx>t.days.length-1)ui.dayIdx=Math.max(0,t.days.length-1);return t.days[ui.dayIdx];}
 
