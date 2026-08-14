@@ -800,6 +800,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .oadd{background:var(--primary);color:#fff;font-weight:700;font-size:12px;border-radius:8px;padding:6px 11px}
   .odir{color:var(--primary);font-weight:600;font-size:12px}
   .pin.opt{background:#fff !important;transform:none;border-radius:50%;width:24px;height:24px;font-size:13px;color:inherit;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+  textarea.field{resize:vertical;min-height:64px;font-family:inherit;line-height:1.4}
 
   /* modal */
   .scrim{position:fixed;inset:0;background:rgba(22,32,43,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
@@ -972,11 +973,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();
+  seedBookFlags();tidy1();fixNovy();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1040,6 +1041,23 @@ function tidy1(){
   try{localStorage.setItem("tidy1","1");}catch(e){}
   save();
 }
+function fixNovy(){
+  try{if(localStorage.getItem("fixnovy1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){t=state.trips[i];break;}}
+  if(t){
+    var all=[];t.days.forEach(function(d){d.stops.forEach(function(s){all.push(s);});});(t.optionals||[]).forEach(function(s){all.push(s);});
+    all.forEach(function(s){
+      if(/nový svět|novy svet/i.test(s.title||"")){
+        s.desc="A quiet, picturesque lane of pastel cottages in the Hradčany quarter, tucked behind Prague Castle — one of the city's most tranquil old streets.";
+        s.img="";s.wiki="";s.wikiTitle="";s.gallery=[];
+        s.lat=50.0909;s.lng=14.3914;
+        s._locked=true;s._wikiTried=true;s._galTried=true;s._geoTried=true;
+      }
+    });
+  }
+  try{localStorage.setItem("fixnovy1","1");}catch(e){}
+  save();
+}
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
 function day(){var t=trip();if(!t)return null;if(ui.dayIdx>t.days.length-1)ui.dayIdx=Math.max(0,t.days.length-1);return t.days[ui.dayIdx];}
 
@@ -1065,7 +1083,7 @@ function enrich(){
   var t=trip();if(!t)return;
   var stops=[];t.days.forEach(function(d){d.stops.forEach(function(s){stops.push(s);});});(t.optionals||[]).forEach(function(s){stops.push(s);});
   stops.forEach(function(s){
-    if(s._wikiTried||(s.img&&s.lat!=null&&s.desc&&s.wikiTitle))return;
+    if(s._locked||s._wikiTried||(s.img&&s.lat!=null&&s.desc&&s.wikiTitle))return;
     s._wikiTried=true;
     if(!s.wiki){maybeGeo(s);return;}
     var url="https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrlimit=1&gsrsearch="+encodeURIComponent(s.wiki)+"&prop=pageimages|coordinates|extracts&piprop=thumbnail&pithumbsize=500&exsentences=3&explaintext=1";
@@ -1456,9 +1474,10 @@ function renderCard(s,d,t){
 
 function editFields(s){
   return '<input class="field ef-title" placeholder="Name" value="'+escapeHtml(s.title)+'">'
-    +'<input class="field ef-note" placeholder="Blurb / note (optional)" value="'+escapeHtml(s.note)+'">'
+    +'<input class="field ef-note" placeholder="Short blurb (shown on the card)" value="'+escapeHtml(s.note)+'">'
+    +'<textarea class="field ef-desc" rows="3" placeholder="Description (shown when expanded — auto-filled if left blank)">'+escapeHtml(s.desc||"")+'</textarea>'
     +'<input class="field small ef-query" placeholder="Map search (defaults to name)" value="'+escapeHtml(s.query)+'">'
-    +'<input class="field small ef-img" placeholder="Photo URL (optional — auto-fetched if blank)" value="'+escapeHtml(s.img)+'">'
+    +'<input class="field small ef-img" placeholder="Photo URL (auto-fetched if left blank)" value="'+escapeHtml(s.img)+'">'
     +'<input class="field small ef-bookurl" placeholder="Booking / tickets URL (optional)" value="'+escapeHtml(s.bookUrl||"")+'">';
 }
 function bookPicker(sel){
@@ -1495,13 +1514,16 @@ function openEdit(card,s,d,t){
   saveB.onclick=function(){
     var title=pad.querySelector(".ef-title").value.trim()||s.title;
     var note=pad.querySelector(".ef-note").value.trim();
+    var desc=pad.querySelector(".ef-desc").value.trim();
     var query=pad.querySelector(".ef-query").value.trim()||title;
     var img=pad.querySelector(".ef-img").value.trim();
     var bookUrl=pad.querySelector(".ef-bookurl").value.trim();
-    var newImg=(img!==s.img);
-    s.title=title;s.note=note;s.query=query;s.cat=cp._sel;s.img=img;s.wiki=query;
+    var queryChanged=(query!==s.query);
+    s.title=title;s.note=note;s.query=query;s.cat=cp._sel;s.img=img;s.desc=desc;s.wiki=query;
     s.book=bp._sel;if(!s.book)s.booked=false;s.bookUrl=bookUrl;
-    if(newImg||query){s._wikiTried=img?true:false;s._geoTried=false;}
+    if(img||desc){ s._locked=true;s._wikiTried=true; }
+    else { s._locked=false;s._wikiTried=false;s._galTried=false;s.gallery=[];s.wikiTitle=""; }
+    if(queryChanged)s._geoTried=false;
     save();render();updateMap();enrich();
   };
   cancelB.onclick=function(){render();};
@@ -1517,7 +1539,7 @@ function renderAdd(){
     holder.innerHTML="";
     var box=el('<div class="card" style="border-color:var(--primary)"></div>');
     var pad=el('<div style="padding:12px"></div>');
-    pad.appendChild(el(editFields({title:"",note:"",query:"",img:"",bookUrl:""})));
+    pad.appendChild(el(editFields({title:"",note:"",desc:"",query:"",img:"",bookUrl:""})));
     var cp=catPicker("landmark");pad.appendChild(cp);
     pad.appendChild(el('<span class="lab" style="margin-top:10px">Ticket / reservation needed?</span>'));
     var bp=bookPicker("");pad.appendChild(bp);
@@ -1527,10 +1549,12 @@ function renderAdd(){
     add.onclick=function(){
       var title=pad.querySelector(".ef-title").value.trim();if(!title)return;
       var note=pad.querySelector(".ef-note").value.trim();
+      var desc=pad.querySelector(".ef-desc").value.trim();
       var query=pad.querySelector(".ef-query").value.trim()||title;
       var img=pad.querySelector(".ef-img").value.trim();
       var bookUrl=pad.querySelector(".ef-bookurl").value.trim();
-      d.stops.push({id:uid(),title:title,note:note,query:query,wiki:query,cat:cp._sel,img:img,book:bp._sel,booked:false,bookUrl:bookUrl,lat:null,lng:null,done:false,_wikiTried:img?true:false});
+      var locked=!!(img||desc);
+      d.stops.push({id:uid(),title:title,note:note,desc:desc,query:query,wiki:query,cat:cp._sel,img:img,book:bp._sel,booked:false,bookUrl:bookUrl,lat:null,lng:null,done:false,_wikiTried:locked,_locked:locked});
       save();render();updateMap();enrich();
     };
     cancel.onclick=function(){render();};
