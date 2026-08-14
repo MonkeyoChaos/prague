@@ -1504,7 +1504,7 @@ function catPicker(sel){
 function openEdit(card,s,d,t){
   card.innerHTML="";
   var pad=el('<div style="padding:12px"></div>');
-  pad.appendChild(el(editFields(s)));
+  var ff=document.createElement("div");ff.innerHTML=editFields(s);pad.appendChild(ff);
   var cp=catPicker(s.cat);pad.appendChild(cp);
   pad.appendChild(el('<span class="lab" style="margin-top:10px">Ticket / reservation needed?</span>'));
   var bp=bookPicker(s.book);pad.appendChild(bp);
@@ -1539,7 +1539,7 @@ function renderAdd(){
     holder.innerHTML="";
     var box=el('<div class="card" style="border-color:var(--primary)"></div>');
     var pad=el('<div style="padding:12px"></div>');
-    pad.appendChild(el(editFields({title:"",note:"",desc:"",query:"",img:"",bookUrl:""})));
+    var ff=document.createElement("div");ff.innerHTML=editFields({title:"",note:"",desc:"",query:"",img:"",bookUrl:""});pad.appendChild(ff);
     var cp=catPicker("landmark");pad.appendChild(cp);
     pad.appendChild(el('<span class="lab" style="margin-top:10px">Ticket / reservation needed?</span>'));
     var bp=bookPicker("");pad.appendChild(bp);
