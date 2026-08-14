@@ -973,11 +973,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1262,6 +1262,46 @@ function restructure1(){
 
   t.days.push(foodDay);t.days.push(optDay);
   try{localStorage.setItem("restructure1","1");}catch(e){}
+  save();
+}
+function seedRomania(){
+  function S(o){return {id:uid(),title:o.t,note:o.n||"",desc:o.d||"",query:o.q||(o.t+", Romania"),wiki:o.w||"",wikiExact:!!o.w,commonsQ:o.cq||o.w||o.t,cat:o.c||"landmark",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:o.b||"",booked:false,bookUrl:"",tag:o.tag||"",area:o.a||"",done:false,_descLock:true};}
+  function D(label,area,notes,arr){return {id:uid(),label:label,area:area,notes:notes||"",stops:arr.map(function(o){o.a=area;return S(o);})};}
+  return {id:uid(),name:"Romania",region:"Romania",optionals:[],days:[
+    D("Day 1 · Bucharest","Bucharest","Fly in from Prague and pick up the rental car. Easy first evening in the centre.",[
+      {t:"Old Town (Lipscani)",c:"landmark",w:"Lipscani",q:"Lipscani, Bucharest, Romania",d:"Bucharest's lively historic core — a maze of restored 19th-century streets full of bars, cafés and old merchant houses."},
+      {t:"Curtea Veche (Old Princely Court)",c:"landmark",w:"Curtea Veche",tag:"Dracula",q:"Curtea Veche, Bucharest, Romania",d:"The ruins of the 15th-century royal court of Wallachia — Vlad the Impaler's actual seat of power in Bucharest, with a bust of the prince outside."},
+      {t:"Stavropoleos Monastery",c:"church",w:"Stavropoleos Monastery",q:"Stavropoleos Monastery, Bucharest, Romania",d:"A tiny, exquisitely carved 1720s Orthodox church tucked in the Old Town — a gilded interior, a serene courtyard, and beautiful Byzantine chant."}
+    ]),
+    D("Day 2 · Bucharest → Brașov","Bucharest","Book the Palace of Parliament tour ahead (passport needed). Snagov is ~40 min north; Peleș is a worthwhile stop en route to Brașov if you have time.",[
+      {t:"Palace of the Parliament",c:"landmark",w:"Palace of the Parliament",b:"ticket",q:"Palace of the Parliament, Bucharest, Romania",d:"Ceaușescu's colossal 1980s folly in marble — the world's heaviest building and second-largest by floor area; guided tours cover a fraction of its 1,100 rooms."},
+      {t:"Snagov Monastery",c:"church",w:"Snagov Monastery",tag:"Dracula",q:"Snagov Monastery, Romania",d:"An island monastery on Lake Snagov, ~40 min north of Bucharest, traditionally held to be the burial place of Vlad the Impaler."},
+      {t:"Peleș Castle (Sinaia)",c:"landmark",w:"Peleș Castle",b:"ticket",q:"Peleș Castle, Sinaia, Romania",d:"A storybook German-Renaissance royal palace in the Carpathian foothills — lavishly decorated and one of Europe's most beautiful castles; en route to Brașov."}
+    ]),
+    D("Day 3 · Bran & Brașov","Brașov & Bran","",[
+      {t:"Bran Castle",c:"landmark",w:"Bran Castle",b:"ticket",tag:"Dracula",q:"Bran Castle, Romania",d:"The clifftop castle marketed worldwide as 'Dracula's Castle' — dramatic and fun, though the real Vlad link is thin and Bram Stoker never visited."},
+      {t:"Râșnov Citadel",c:"landmark",w:"Râșnov Citadel",q:"Râșnov Citadel, Romania",d:"A hilltop peasant-fortress above the Bran corridor with sweeping valley views — an easy pairing with Bran."},
+      {t:"Brașov Old Town",c:"landmark",w:"Brașov",q:"Brașov, Romania",d:"A gorgeous Saxon city ringed by mountains — the pastel Council Square, the Gothic Black Church, and the sliver-thin Rope Street."}
+    ]),
+    D("Day 4 · Sighișoara & Sibiu","Sighișoara & Sibiu","",[
+      {t:"Sighișoara Citadel",c:"landmark",w:"Sighișoara",tag:"Dracula",q:"Sighișoara, Romania",d:"A perfectly preserved medieval Saxon citadel (UNESCO) of cobbled lanes and a clock tower — and the birthplace of Vlad the Impaler, whose house still stands."},
+      {t:"Sibiu Old Town",c:"landmark",w:"Sibiu",q:"Sibiu, Romania",d:"An elegant Saxon city of cobbled squares and pastel facades — with the famous 'eyes' peeking from its rooftops — one of Romania's loveliest old towns."}
+    ]),
+    D("Day 5 · Corvin Castle","Corvin","Corvin is ~2 hrs each way from Sibiu — a there-and-back day, then back to Sibiu for the night.",[
+      {t:"Corvin Castle",c:"landmark",w:"Corvin Castle",b:"ticket",tag:"Dracula",q:"Corvin Castle, Hunedoara, Romania",d:"A vast Gothic-Renaissance castle bristling with towers and a long drawbridge — one of Europe's greatest, and where legend says Vlad the Impaler was held prisoner."}
+    ]),
+    D("Day 6 · Transfăgărășan & Poenari","Transfăgărășan & Poenari","Transfăgărășan is open ~7am–9pm in season — start early and allow 4–6 hrs. Confirm Poenari is open before the climb (it closes on short notice for bears). It's ~3 hrs back to Bucharest afterward — consider an overnight near Curtea de Argeș/Pitești if your flight out is early.",[
+      {t:"Transfăgărășan Highway",c:"view",w:"Transfăgărășan",q:"Transfăgărășan, Romania",d:"Ceaușescu's spectacular 90 km mountain road over the Carpathians — hairpins, tunnels, viaducts and a glacial lake, made famous by Top Gear. Seasonal; fuel up and mind the bears."},
+      {t:"Poenari Castle",c:"landmark",w:"Poenari Castle",b:"ticket",tag:"Dracula",q:"Poenari Castle, Romania",d:"The real fortress of Vlad the Impaler, perched on a cliff and reached by 1,480 steps. Check its status before you go — it shuts on short notice for bear activity."},
+      {t:"Curtea de Argeș Monastery",c:"church",w:"Curtea de Argeș Monastery",q:"Curtea de Argeș Monastery, Romania",d:"An ornate early-16th-century monastery and royal necropolis with a swirling, jewel-box exterior — a fine stop on the way south from the mountains."}
+    ])
+  ]};
+}
+function addRomania(){
+  try{if(localStorage.getItem("romania_v1"))return;}catch(e){}
+  var exists=false;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){exists=true;break;}}
+  if(!exists){state.trips.push(normalize([seedRomania()])[0]);}
+  try{localStorage.setItem("romania_v1","1");}catch(e){}
   save();
 }
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
@@ -1659,6 +1699,7 @@ function renderCard(s,d,t){
   meat.appendChild(titlerow);
   var pills=el('<div class="pillrow"></div>');
   pills.appendChild(el('<span class="catpill" style="color:'+cat.color+';background:'+cat.tint+'">'+cat.emoji+" "+cat.label+'</span>'));
+  if(s.tag)pills.appendChild(el('<span class="catpill" style="color:#8a2b2b;background:#f4e3e3">'+escapeHtml(s.tag)+'</span>'));
   if(s.book){
     var bl=s.booked?"\u2713 Booked":(s.book==="reservation"?"\ud83d\udcc5 Reserve":"\ud83c\udf9f Book");
     var bf=el('<button class="bookflag'+(s.booked?" booked":"")+'">'+bl+'</button>');
