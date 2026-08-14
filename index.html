@@ -956,7 +956,7 @@ function normStop(s){
     img:s.img||"",lat:(s.lat===0||s.lat)?s.lat:null,lng:(s.lng===0||s.lng)?s.lng:null,
     desc:s.desc||"",wikiTitle:s.wikiTitle||"",gallery:Array.isArray(s.gallery)?s.gallery:[],
     book:s.book||"",booked:!!s.booked,bookUrl:s.bookUrl||"",
-    tag:s.tag||"",area:s.area||"",done:!!s.done};
+    tag:s.tag||"",area:s.area||"",wikiExact:!!s.wikiExact,commonsQ:s.commonsQ||"",done:!!s.done};
 }
 function normalize(trips){
   return (trips||[]).map(function(t){
@@ -973,11 +973,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1058,6 +1058,161 @@ function fixNovy(){
   try{localStorage.setItem("fixnovy1","1");}catch(e){}
   save();
 }
+function fixgeo1(){
+  try{if(localStorage.getItem("fixgeo1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){t=state.trips[i];break;}}
+  if(t){
+    var C=[
+      {re:/old town square|astronomical clock|hall tower/i,lat:50.0870,lng:14.4207},
+      {re:/st\.? james|svatého jakuba/i,lat:50.0883,lng:14.4248},
+      {re:/speculum/i,lat:50.0908,lng:14.4225},
+      {re:/municipal house|obecní dům|powder tower/i,lat:50.0877,lng:14.4278},
+      {re:/charles bridge|karlův most/i,lat:50.0865,lng:14.4114},
+      {re:/lennon/i,lat:50.0863,lng:14.4068},
+      {re:/lokál|lokal dlouh/i,lat:50.0907,lng:14.4258},
+      {re:/café savoy|cafe savoy/i,lat:50.0810,lng:14.4073},
+      {re:/prague castle|pražský hrad/i,lat:50.0911,lng:14.4016},
+      {re:/strahov/i,lat:50.0864,lng:14.3887},
+      {re:/petřín|petrin/i,lat:50.0835,lng:14.3951},
+      {re:/wallenstein|valdštejnská/i,lat:50.0904,lng:14.4079},
+      {re:/vrtba|vrtbovská/i,lat:50.0866,lng:14.4029},
+      {re:/vojan/i,lat:50.0889,lng:14.4091,desc:"One of Prague's oldest gardens — a walled, tranquil Baroque garden in Malá Strana, dotted with fruit trees, small chapels, and the occasional wandering peacock."},
+      {re:/veletržní|national gallery/i,lat:50.1018,lng:14.4326},
+      {re:/žižkov.*(tower|věž)|television tower/i,lat:50.0811,lng:14.4512},
+      {re:/nuclear bunker/i,lat:50.0843,lng:14.4580},
+      {re:/kafka/i,lat:50.0817,lng:14.4208},
+      {re:/paternoster|lucerna/i,lat:50.0809,lng:14.4264},
+      {re:/dancing house|tančící/i,lat:50.0754,lng:14.4142},
+      {re:/náplavka riverfront/i,lat:50.0698,lng:14.4146},
+      {re:/sedlec ossuary/i,lat:49.9793,lng:15.2884},
+      {re:/barbara|barbory/i,lat:49.9448,lng:15.2632}
+    ];
+    var all=[];t.days.forEach(function(d){d.stops.forEach(function(s){all.push(s);});});(t.optionals||[]).forEach(function(s){all.push(s);});
+    all.forEach(function(s){
+      for(var k=0;k<C.length;k++){if(C[k].re.test(s.title||"")){s.lat=C[k].lat;s.lng=C[k].lng;s._geoTried=true;if(C[k].desc){s.desc=C[k].desc;s.img="";s.wiki="";s.wikiTitle="";s.gallery=[];s._locked=true;s._wikiTried=true;s._galTried=true;}break;}}
+    });
+  }
+  try{localStorage.setItem("fixgeo1","1");}catch(e){}
+  save();
+}
+function fixdesc1(){
+  try{if(localStorage.getItem("fixdesc1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){t=state.trips[i];break;}}
+  if(t){
+    var D=[
+      {re:/astronomical clock|old town square/i,w:"Prague astronomical clock",d:"Prague's medieval market square, ringed by pastel Gothic and Baroque houses and the twin-spired Týn Church. On the hour, the 600-year-old Astronomical Clock sets its parade of apostles in motion."},
+      {re:/hall tower/i,w:"Old Town Hall (Prague)",d:"The tower of the Old Town Hall — ride the lift or climb the ramp for the finest rooftop panorama over the Old Town Square and the sea of red roofs."},
+      {re:/st\.? james|jakuba/i,d:"A lavish Baroque basilica with one of Prague's best organs and frequent concerts. By the door hangs a shrivelled forearm — by legend a thief's, seized when a statue of the Madonna grabbed him."},
+      {re:/speculum/i,d:"A tiny museum in one of Prague's oldest houses, set over a warren of underground alchemy passages rediscovered after the 2002 floods — an echo of Rudolf II's obsession with turning metal into gold."},
+      {re:/municipal house|powder tower/i,w:"Municipal House",d:"Prague's Art Nouveau showpiece: a 1912 concert-and-café palace dripping with Mucha-era decoration, joined to the blackened Gothic Powder Tower, one of the old city gates."},
+      {re:/palladium/i,d:"A large modern shopping centre on náměstí Republiky, built inside a restored neo-Romanesque barracks — dozens of shops and a food floor right in the centre of town."},
+      {re:/imperial/i,d:"A 1914 Art Deco landmark whose plain facade hides a spectacular café clad floor-to-ceiling in ceramic mosaic tiles — a grand spot for coffee or a lavish breakfast."},
+      {re:/charles bridge|karlův most/i,w:"Charles Bridge",d:"The city's iconic 14th-century stone bridge, lined with Baroque saints and guarded by Gothic towers at each end. Cross at dawn or golden hour to beat the crowds."},
+      {re:/lennon/i,w:"Lennon Wall",d:"A graffiti-covered wall in Malá Strana that became a symbol of free expression after 1980. Painted over constantly, it never looks the same twice."},
+      {re:/lokál|lokal/i,d:"A buzzing modern beer hall pouring exceptionally fresh tank Pilsner Urquell alongside well-made Czech pub classics — a local favourite just off the Old Town."},
+      {re:/savoy/i,d:"A grand 1893 café below Petřín, with a restored gilded neo-Renaissance ceiling; famous for all-day breakfasts, pastries and Prague ham."},
+      {re:/prague castle|pražský hrad/i,w:"Prague Castle",d:"The vast hilltop castle complex — the largest ancient castle in the world — taking in St. Vitus Cathedral, the Old Royal Palace, St. George's Basilica and the cottage-lined Golden Lane."},
+      {re:/strahov/i,w:"Strahov Monastery",d:"A monastery whose two Baroque library halls — the Theological and Philosophical — are among the most beautiful anywhere, with frescoed ceilings over tiers of gilded books."},
+      {re:/petřín|petrin/i,w:"Petřín Lookout Tower",d:"A 63-metre iron lookout built in 1891 as a mini-Eiffel atop Petřín hill; a funicular carries you up through orchards to sweeping views across the city."},
+      {re:/wallenstein|valdštejn/i,w:"Wallenstein Palace",d:"The formal Baroque garden of Wallenstein Palace (now the Senate): clipped hedges, bronze statues, a dramatic dripstone grotto wall and roaming peacocks — and it's free."},
+      {re:/vrtba/i,w:"Vrtba Garden",d:"A jewel-box terraced Baroque garden climbing the slope of Petřín, with statues, balustrades and one of the loveliest small views over Malá Strana's rooftops."},
+      {re:/veletržní|national gallery/i,w:"Trade Fair Palace",d:"The National Gallery's modern and contemporary collection, in a landmark 1928 Functionalist palace — including Mucha's monumental Slav Epic cycle."},
+      {re:/žižkov.*(tower|věž)|television tower/i,w:"Žižkov Television Tower",d:"A 216-metre Communist-era transmission tower — Prague's tallest structure — made surreal by David Černý's giant crawling bronze babies. An observation deck and bar sit near the top."},
+      {re:/nuclear bunker/i,d:"A guided descent into a Soviet-era nuclear fallout shelter beneath Žižkov, still fitted with gas masks, filters and period Civil-Defence gear — a vivid slice of Cold War Prague."},
+      {re:/kafka/i,w:"Head of Franz Kafka",d:"David Černý's 11-metre kinetic sculpture of Kafka's head, built from 42 mirrored steel layers that rotate independently, endlessly assembling and dissolving his face."},
+      {re:/paternoster/i,d:"Inside the Art Deco Lucerna arcade (built by Václav Havel's grandfather) runs a paternoster — a doorless lift of open cabins that never stops; you step on and off as it slowly loops."},
+      {re:/dancing house|tančící/i,w:"Dancing House",d:"Frank Gehry and Vlado Milunić's 1996 landmark on the riverfront, nicknamed 'Fred and Ginger' for its two dance-like towers; a bar and terrace sit on top."},
+      {re:/náplavka riverfront/i,d:"The revitalised Vltava embankment, where old ice-cellar vaults in the quay wall are now bars and cafés — a favourite spot for an evening beer or wine by the water."},
+      {re:/farmers.{0,3}market/i,d:"Every Saturday the Rašínovo nábřeží embankment hosts one of Prague's best farmers' markets: seasonal produce, street food, cheeses, pastries and Moravian wines."},
+      {re:/vinohradský pivovar/i,d:"A revived neighbourhood brewery in leafy Vinohrady, serving its own unpasteurised lagers and hearty Czech dishes in a big, lively beer hall."},
+      {re:/špejle|spejle/i,d:"A casual central bistro known for Czech chlebíčky (open-faced sandwiches) served on skewers, plus easy small plates — a handy, unfussy lunch stop."},
+      {re:/sedlec|ossuary/i,w:"Sedlec Ossuary",d:"A small chapel in Kutná Hora decorated with the bones of tens of thousands of people, arranged into chandeliers, garlands and coats of arms — macabre and unforgettable."},
+      {re:/barbara|barbory/i,w:"St. Barbara's Church, Kutná Hora",d:"Kutná Hora's soaring late-Gothic cathedral, funded by the town's silver miners and dedicated to their patron saint; its tent-like roof and mining frescoes are extraordinary."},
+      {re:/adria/i,d:"A striking 1920s rondo-cubist / Art Deco palace on Národní with a heavy, sculptural facade; it later housed Havel's Civic Forum during the Velvet Revolution."},
+      {re:/legi[íi]|legions/i,d:"Josef Gočár's 1923 masterpiece on Na Poříčí — the defining building of Czech rondo-cubism, its facade banded red and white with sculpted reliefs of the Czechoslovak Legions."},
+      {re:/municipal library|knihovna/i,d:"František Roith's restrained 1928 Art Deco library by the Old Town Hall; its atrium holds 'Idiom', a tower of books that seems to spiral to infinity."},
+      {re:/black madonna/i,d:"Gočár's 1912 Cubist department store — one of the first Cubist buildings anywhere. Its first floor holds the Grand Café Orient, the world's only Cubist café."},
+      {re:/koruna/i,d:"A monumental 1914 palace at the foot of Wenceslas Square, blending late Art Nouveau and early Deco, crowned by a glass-and-metal tower like a jewelled corona."},
+      {re:/palác lucerna|palac lucerna/i,d:"An Art Deco entertainment palace and glass-roofed arcade built 1907–21 by Václav Havel's grandfather; home to a famous music hall, cinema, cafés and a paternoster lift."},
+      {re:/mayor/i,d:"The Lord Mayor's Residence on Mariánské náměstí hides one of Prague's most complete Art Deco interiors — beautifully preserved, but only open to the public on rare occasions."},
+      {re:/akropolis/i,d:"A 1920s Art Deco theatre and palace in gritty-cool Žižkov, now a much-loved music and cultural venue with a wonderfully atmospheric café."},
+      {re:/magicians|alchemists and/i,d:"A small, atmospheric museum in a historic Old Town house, recreating a Renaissance alchemist's laboratory and Prague's magical, Rudolfine lore."},
+      {re:/karlštejn|karlstejn/i,w:"Karlštejn Castle",d:"A dramatic Gothic castle founded by Charles IV in 1348 on a wooded crag ~30 km from Prague, built to guard the crown jewels; its Chapel of the Holy Cross glitters with gold and gems."}
+    ];
+    var all=[];t.days.forEach(function(d){d.stops.forEach(function(s){all.push(s);});});(t.optionals||[]).forEach(function(s){all.push(s);});
+    all.forEach(function(s){
+      if(s._locked)return;
+      for(var k=0;k<D.length;k++){if(D[k].re.test(s.title||"")){
+        s.desc=D[k].d;s._descLock=true;s.wikiTitle="";s.gallery=[];s._galTried=false;
+        if(D[k].w){s.wiki=D[k].w;s.img="";s._imgLock=false;s._wikiTried=false;}
+        else{s.wiki="";s.img="";s._imgLock=true;s._wikiTried=true;}
+        break;
+      }}
+    });
+  }
+  try{localStorage.setItem("fixdesc1","1");}catch(e){}
+  save();
+}
+function fixphoto1(){
+  try{if(localStorage.getItem("fixphoto1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){t=state.trips[i];break;}}
+  if(t){
+    var P=[
+      {re:/astronomical clock|old town square/i,w:"Prague astronomical clock"},
+      {re:/hall tower/i,w:"Old Town Hall (Prague)"},
+      {re:/st\.? james|jakuba/i,w:"Basilica of St. James, Prague",cq:"Kostel svatého Jakuba Většího Praha"},
+      {re:/speculum/i,cq:"Speculum Alchemiae Prague"},
+      {re:/municipal house|powder tower/i,w:"Municipal House"},
+      {re:/palladium/i,w:"Palladium (Prague)",cq:"Palladium Prague náměstí Republiky"},
+      {re:/imperial/i,cq:"Café Imperial Prague"},
+      {re:/charles bridge|karlův most/i,w:"Charles Bridge"},
+      {re:/lennon/i,w:"Lennon Wall"},
+      {re:/lokál|lokal/i,cq:"Pilsner Urquell tank beer restaurant Prague"},
+      {re:/savoy/i,cq:"Café Savoy Prague"},
+      {re:/prague castle|pražský hrad/i,w:"Prague Castle"},
+      {re:/strahov/i,w:"Strahov Monastery"},
+      {re:/nový svět|novy svet/i,w:"Nový Svět (Prague)",cq:"Nový Svět Praha"},
+      {re:/petřín|petrin/i,w:"Petřín Lookout Tower"},
+      {re:/wallenstein|valdštejn/i,w:"Wallenstein Garden",cq:"Valdštejnská zahrada Praha"},
+      {re:/vrtba/i,w:"Vrtba Garden",cq:"Vrtbovská zahrada"},
+      {re:/vojan/i,cq:"Vojanovy sady Praha"},
+      {re:/veletržní|national gallery/i,w:"Trade Fair Palace",cq:"Veletržní palác Praha"},
+      {re:/žižkov.*(tower|věž)|television tower/i,w:"Žižkov Television Tower"},
+      {re:/nuclear bunker/i,cq:"Bunker Parukářka Praha"},
+      {re:/kafka/i,w:"Head of Franz Kafka"},
+      {re:/paternoster/i,cq:"Palác Lucerna Praha pasáž"},
+      {re:/dancing house|tančící/i,w:"Dancing House"},
+      {re:/náplavka riverfront/i,cq:"Náplavka Praha"},
+      {re:/farmers.{0,3}market/i,cq:"Farmářské trhy Náplavka Praha"},
+      {re:/vinohradský pivovar/i,cq:"Vinohradský pivovar"},
+      {re:/špejle|spejle/i,cq:"Chlebíčky"},
+      {re:/sedlec|ossuary/i,w:"Sedlec Ossuary"},
+      {re:/barbara|barbory/i,w:"St. Barbara's Church, Kutná Hora"},
+      {re:/adria/i,w:"Adria Palace",cq:"Palác Adria Praha"},
+      {re:/legi[íi]|legions/i,w:"Bank of the Czechoslovak Legions",cq:"Banka legií Praha"},
+      {re:/municipal library|knihovna/i,w:"Municipal Library of Prague",cq:"Městská knihovna v Praze"},
+      {re:/black madonna/i,w:"House of the Black Madonna"},
+      {re:/koruna/i,cq:"Palác Koruna Praha"},
+      {re:/palác lucerna|palac lucerna/i,w:"Lucerna Palace",cq:"Palác Lucerna Praha"},
+      {re:/mayor/i,cq:"Nová radnice Mariánské náměstí Praha"},
+      {re:/akropolis/i,cq:"Palác Akropolis Žižkov"},
+      {re:/magicians|alchemists and/i,cq:"alchemist laboratory"},
+      {re:/karlštejn|karlstejn/i,w:"Karlštejn Castle"}
+    ];
+    var all=[];t.days.forEach(function(d){d.stops.forEach(function(s){all.push(s);});});(t.optionals||[]).forEach(function(s){all.push(s);});
+    all.forEach(function(s){
+      for(var k=0;k<P.length;k++){if(P[k].re.test(s.title||"")){
+        s._locked=false;s._descLock=true;
+        s.img="";s._imgLock=false;s._wikiTried=false;s._commonsTried=false;s._galTried=false;s.wikiTitle="";s.gallery=[];
+        if(P[k].w){s.wiki=P[k].w;s.wikiExact=true;}else{s.wiki="";s.wikiExact=false;}
+        s.commonsQ=P[k].cq||"";
+        break;
+      }}
+    });
+  }
+  try{localStorage.setItem("fixphoto1","1");}catch(e){}
+  save();
+}
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
 function day(){var t=trip();if(!t)return null;if(ui.dayIdx>t.days.length-1)ui.dayIdx=Math.max(0,t.days.length-1);return t.days[ui.dayIdx];}
 
@@ -1083,22 +1238,38 @@ function enrich(){
   var t=trip();if(!t)return;
   var stops=[];t.days.forEach(function(d){d.stops.forEach(function(s){stops.push(s);});});(t.optionals||[]).forEach(function(s){stops.push(s);});
   stops.forEach(function(s){
-    if(s._locked||s._wikiTried||(s.img&&s.lat!=null&&s.desc&&s.wikiTitle))return;
-    s._wikiTried=true;
-    if(!s.wiki){maybeGeo(s);return;}
-    var url="https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&generator=search&gsrlimit=1&gsrsearch="+encodeURIComponent(s.wiki)+"&prop=pageimages|coordinates|extracts&piprop=thumbnail&pithumbsize=500&exsentences=3&explaintext=1";
+    var needDesc=!s.desc&&!s._descLock&&!s._locked;
+    var needImg=!s.img&&!s._imgLock&&!s._locked;
+    if(s._wikiTried||(!needDesc&&!needImg)){ if(needImg&&!s.img)commonsImg(s); if(s.lat==null)maybeGeo(s); return; }
+    if(!s.wiki){ s._wikiTried=true; if(needImg)commonsImg(s); if(s.lat==null)maybeGeo(s); return; }
+    var base="https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages|coordinates|extracts&piprop=thumbnail&pithumbsize=600&exsentences=3&explaintext=1&";
+    var url=base+(s.wikiExact?("titles="+encodeURIComponent(s.wiki)):("generator=search&gsrlimit=1&gsrsearch="+encodeURIComponent(s.wiki)));
     fetch(url).then(function(r){return r.json();}).then(function(j){
-      var pages=j&&j.query&&j.query.pages;var changed=false;
+      s._wikiTried=true;
+      var pages=j&&j.query&&j.query.pages;var changed=false;var gotImg=false;
       if(pages){var p=pages[Object.keys(pages)[0]];
-        if(p&&p.thumbnail&&p.thumbnail.source&&!s.img){s.img=p.thumbnail.source;changed=true;}
-        if(p&&p.coordinates&&p.coordinates[0]&&s.lat==null){s.lat=p.coordinates[0].lat;s.lng=p.coordinates[0].lon;changed=true;}
-        if(p&&p.extract&&!s.desc){s.desc=p.extract;changed=true;}
-        if(p&&p.title&&!s.wikiTitle){s.wikiTitle=p.title;changed=true;}
+        if(p){
+          if(p.thumbnail&&p.thumbnail.source&&needImg){s.img=p.thumbnail.source;changed=true;gotImg=true;}
+          if(p.coordinates&&p.coordinates[0]&&s.lat==null){s.lat=p.coordinates[0].lat;s.lng=p.coordinates[0].lon;changed=true;}
+          if(p.extract&&needDesc){s.desc=p.extract;changed=true;}
+          if(p.title&&!s.wikiTitle){s.wikiTitle=p.title;changed=true;}
+        }
       }
       if(changed){save();softRefresh();}
+      if(needImg&&!gotImg&&!s.img)commonsImg(s);
       if(s.lat==null)maybeGeo(s);
-    }).catch(function(){maybeGeo(s);});
+    }).catch(function(){ if(needImg&&!s.img)commonsImg(s); maybeGeo(s); });
   });
+}
+function commonsImg(s){
+  if(s._commonsTried||s.img||s._imgLock||s._locked)return; s._commonsTried=true;
+  var t=trip();var q=s.commonsQ||s.wiki||fq(s.query,t?t.region:"")||s.title;
+  var url="https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=1&gsrsearch="+encodeURIComponent(q)+"&prop=imageinfo&iiprop=url&iiurlwidth=600";
+  fetch(url).then(function(r){return r.json();}).then(function(j){
+    var pages=j&&j.query&&j.query.pages;if(!pages)return;
+    var p=pages[Object.keys(pages)[0]];
+    if(p&&p.imageinfo&&p.imageinfo[0]&&p.imageinfo[0].thumburl){s.img=p.imageinfo[0].thumburl;save();softRefresh();}
+  }).catch(function(){});
 }
 function maybeGeo(s){
   if(s.lat!=null||s._geoTried)return;s._geoTried=true;
@@ -1371,7 +1542,8 @@ function renderOptionalCard(o,d,t){
   if(o.tag)chips.appendChild(el('<span class="otag" style="color:'+cat.color+';background:'+cat.tint+'">'+escapeHtml(o.tag)+'</span>'));
   if(o.book)chips.appendChild(el('<span class="otag" style="color:var(--brass);background:var(--brassSoft)">'+(o.book==="reservation"?"📅 Reserve":"🎫 Ticket")+'</span>'));
   meat.appendChild(chips);
-  if(o.note)meat.appendChild(el('<div class="oblurb">'+escapeHtml(o.note)+'</div>'));
+  var descText=o.desc||o.note;
+  if(descText)meat.appendChild(el('<div class="oblurb">'+escapeHtml(descText)+'</div>'));
   var acts=el('<div class="oacts"></div>');
   var addb=el('<button class="oadd">＋ Add to day</button>');
   addb.onclick=function(){promoteOptional(o,d);};
@@ -1744,6 +1916,7 @@ function softRefresh(){
 
 /* ============================ boot ============================ */
 load();render();updateMap();enrich();
+window.addEventListener("online",function(){try{enrich();}catch(e){}});
 window.addEventListener("resize",function(){if(map)setTimeout(function(){map.invalidateSize();},80);});
 </script>
 
