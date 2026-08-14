@@ -948,7 +948,7 @@ function seedPrague(){
 
 /* ============================ state ============================ */
 var state={trips:[],activeId:null};
-var ui={dayIdx:0,mode:"stops",switcher:false,modal:null,notesOpen:false,expanded:{},optOpen:{}};
+var ui={dayIdx:0,mode:"stops",switcher:false,modal:null,notesOpen:false,expanded:{},optOpen:{},tabScroll:0};
 
 function normStop(s){
   return {id:s.id||uid(),title:s.title||"Untitled",note:s.note||"",query:s.query||s.title||"",
@@ -973,11 +973,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1213,6 +1213,57 @@ function fixphoto1(){
   try{localStorage.setItem("fixphoto1","1");}catch(e){}
   save();
 }
+function restructure1(){
+  try{if(localStorage.getItem("restructure1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="prague"){t=state.trips[i];break;}}
+  if(!t){try{localStorage.setItem("restructure1","1");}catch(e){}return;}
+  t.optionals=t.optionals||[];
+  function findDay(re){for(var i=0;i<t.days.length;i++){var a=(t.days[i].area||"")+" "+(t.days[i].label||"");if(re.test(a))return t.days[i];}return null;}
+  function pull(day,re){if(!day)return null;for(var i=0;i<day.stops.length;i++){if(re.test(day.stops[i].title||""))return day.stops.splice(i,1)[0];}return null;}
+  function clone(o){var c=JSON.parse(JSON.stringify(o));c.id=uid();c.done=false;return c;}
+  var thu=findDay(/old town/i),fri=findDay(/castle|malá strana/i),sat=findDay(/vinohrady|vyšehrad/i),sun=findDay(/holešovice|žižkov/i);
+
+  /* rebalance: Dancing House + Náplavka riverfront from Sun -> Sat */
+  if(sun&&sat){var dh=pull(sun,/dancing house|tančící/i);if(dh)sat.stops.push(dh);var nr=pull(sun,/náplavka riverfront/i);if(nr)sat.stops.push(nr);}
+
+  /* relocate existing food venues out of their days */
+  var masters=[];
+  function relocate(day,re,area){var s=pull(day,re);if(s){s.tag="Food";s.area=area;s.cat="food";masters.push(s);}}
+  relocate(thu,/lokál|lokal dlouh/i,"Old Town");
+  relocate(thu,/špejle|spejle/i,"Old Town");
+  relocate(fri,/savoy/i,"Castle & Malá Strana");
+  relocate(sat,/vinohradský pivovar/i,"Vinohrady & Vyšehrad");
+
+  /* new food picks */
+  function F(o){return {id:uid(),title:o.t,note:o.n||"",desc:o.d||"",query:o.q||(o.t+" Praha"),wiki:"",wikiExact:false,commonsQ:o.cq||o.t,cat:"food",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:o.b||"",booked:false,bookUrl:"",tag:"Food",area:o.a,done:false,_descLock:true,_imgLock:false,_wikiTried:true};}
+  masters=masters.concat([
+    F({t:"Next Door by Imperial",a:"Old Town",b:"reservation",cq:"Café Imperial Prague",d:"The relaxed modern bistro across from Café Imperial (same chef) — sharp, unfussy plates and a great-value way to eat well without a fine-dining commitment."}),
+    F({t:"Sisters – chlebíčky",a:"Old Town",cq:"Chlebíčky",d:"A tiny counter for beautiful modern takes on chlebíčky (Czech open-faced sandwiches) — cheap, delicious, a perfect quick lunch."}),
+    F({t:"Naše maso",a:"Old Town",cq:"Naše maso Prague",d:"A celebrated butcher and counter for sausages, meatloaf, burgers and Czech-style cold cuts — casual, top-quality meat you eat standing up."}),
+    F({t:"U Kunštátů (craft beer)",a:"Old Town",cq:"craft beer bar Prague",d:"One of the country's original craft-beer bars, tucked in the Old Town — rotating taps of local microbrews well beyond Pilsner."}),
+    F({t:"EMA Espresso Bar",a:"Old Town",cq:"EMA Espresso Bar Prague",d:"A specialty-coffee pioneer near Masaryk station with some of the city's best brews and a well-made brunch — poached eggs, shakshuka."}),
+    F({t:"Kavárna Nový Svět",a:"Castle & Malá Strana",cq:"Nový Svět Praha",d:"A peaceful little Hradčany café right on the Nový Svět lane, with homemade pastries — a lovely pause on the castle day."}),
+    F({t:"U Modré Kachničky",a:"Castle & Malá Strana",b:"reservation",cq:"U Modré Kachničky Praha",d:"A cozy, slightly upscale Malá Strana restaurant known for duck and game — a characterful traditional Czech dinner."}),
+    F({t:"U Kroka",a:"Vinohrady & Vyšehrad",b:"reservation",cq:"U Kroka Praha",d:"A beloved neighborhood Czech restaurant just below Vyšehrad, doing classic svíčková, goulash and roast duck the way locals like it."}),
+    F({t:"Eska Letná",a:"Holešovice & Žižkov",cq:"Eska Praha",d:"The Letná outpost of the famous Karlín bakery-restaurant — koláče, buchty, great bread and modern Czech cooking with specialty coffee."}),
+    F({t:"Letná Beer Garden",a:"Holešovice & Žižkov",cq:"Letná beer garden Prague",d:"A big open-air beer garden on the Letná bluff with sweeping views over the river and bridges — casual pints and a classic Prague afternoon."}),
+    F({t:"Dva Kohouti",a:"Holešovice & Žižkov",cq:"Dva kohouti Praha",d:"A buzzing Karlín craft brewery and taproom brewing beyond the usual — pale ales, IPAs, sours — with a courtyard of food trucks in summer."})
+  ]);
+
+  var foodDay={id:uid(),label:"🍴 Food",area:"",notes:"Every food & drink option in one place — check off or remove as you go. These also appear under each day's Optional section, matched by area.",stops:[]};
+  var optDay={id:uid(),label:"Optional Day",area:"",notes:"Parked extras not tied to a scheduled day.",stops:[]};
+
+  masters.forEach(function(m){t.optionals.push(m);foodDay.stops.push(clone(m));});
+  if(thu){for(var i=0;i<thu.stops.length;i++){if(/imperial/i.test(thu.stops[i].title||"")){foodDay.stops.push(clone(thu.stops[i]));break;}}}
+
+  var kexist=null;for(var i=0;i<t.optionals.length;i++){if(/karlštejn|karlstejn/i.test(t.optionals[i].title||"")){kexist=t.optionals[i];break;}}
+  if(kexist)optDay.stops.push(clone(kexist));
+  else optDay.stops.push({id:uid(),title:"Karlštejn Castle",note:"Alt day trip — hilltop castle (closed Mondays)",desc:"A dramatic Gothic castle founded by Charles IV in 1348 on a wooded crag ~30 km from Prague, built to guard the crown jewels.",query:"Karlštejn Castle, Karlštejn",wiki:"Karlštejn Castle",wikiExact:true,commonsQ:"Karlštejn Castle",cat:"landmark",img:"",lat:49.9394,lng:14.1881,wikiTitle:"",gallery:[],book:"ticket",booked:false,bookUrl:"",tag:"Alt day trip",area:"",done:false,_descLock:true});
+
+  t.days.push(foodDay);t.days.push(optDay);
+  try{localStorage.setItem("restructure1","1");}catch(e){}
+  save();
+}
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
 function day(){var t=trip();if(!t)return null;if(ui.dayIdx>t.days.length-1)ui.dayIdx=Math.max(0,t.days.length-1);return t.days[ui.dayIdx];}
 
@@ -1422,6 +1473,7 @@ function renderSwitcher(){
 }
 function renderTabs(t){
   var tabs=el('<div class="tabs"></div>');var inner=el('<div class="inner"></div>');
+  tabs.addEventListener("scroll",function(){ui.tabScroll=tabs.scrollLeft;});
   t.days.forEach(function(d,i){
     var dn=d.stops.filter(function(s){return s.done;}).length;
     var tot=d.stops.length;var pct=tot?Math.round(dn/tot*100):0;
@@ -1433,7 +1485,9 @@ function renderTabs(t){
   });
   var add=el('<button class="tab add">＋</button>');
   add.onclick=function(){addDay();};inner.appendChild(add);
-  tabs.appendChild(inner);return tabs;
+  tabs.appendChild(inner);
+  requestAnimationFrame(function(){try{tabs.scrollLeft=ui.tabScroll||0;}catch(e){}});
+  return tabs;
 }
 function renderDayHead(){
   var d=day();var t=trip();
