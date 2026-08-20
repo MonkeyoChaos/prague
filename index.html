@@ -973,11 +973,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1302,6 +1302,49 @@ function addRomania(){
   var exists=false;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){exists=true;break;}}
   if(!exists){state.trips.push(normalize([seedRomania()])[0]);}
   try{localStorage.setItem("romania_v1","1");}catch(e){}
+  save();
+}
+function romaniaAdd1(){
+  try{if(localStorage.getItem("romania_add1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){t=state.trips[i];break;}}
+  if(!t){try{localStorage.setItem("romania_add1","1");}catch(e){}return;}
+  function S(o){return {id:uid(),title:o.t,note:o.n||"",desc:o.d||"",query:o.q||(o.t+", Romania"),wiki:o.w||"",wikiExact:!!o.w,commonsQ:o.cq||o.w||o.t,cat:o.c||"landmark",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:o.b||"",booked:false,bookUrl:"",tag:o.tag||"",area:o.a||"",done:false,_descLock:true};}
+  function findDay(re){for(var i=0;i<t.days.length;i++){if(re.test(t.days[i].label||""))return t.days[i];}return null;}
+  function has(day,re){if(!day)return true;for(var i=0;i<day.stops.length;i++){if(re.test(day.stops[i].title||""))return true;}return false;}
+  var d2=findDay(/day 2/i),d3=findDay(/day 3/i),d4=findDay(/day 4/i),d5=findDay(/day 5/i);
+  if(d2&&!has(d2,/hasdeu|hașdeu/i)){
+    var iulia=S({t:"Iulia Hașdeu Castle (Câmpina)",c:"landmark",w:"Iulia Hasdeu Castle",b:"ticket",tag:"Occult",a:d2.area,q:"Iulia Hașdeu Castle, Câmpina, Romania",d:"A spiritualist 'temple' the scholar Bogdan Hașdeu built in the 1890s from plans he said his dead daughter Iulia dictated during séances — dense with occult and Masonic symbols, and a séance room. Roughly on the DN1 toward Brașov."});
+    var pi=-1;for(var i=0;i<d2.stops.length;i++){if(/peleș|peles/i.test(d2.stops[i].title||"")){pi=i;break;}}
+    if(pi>=0)d2.stops.splice(pi,0,iulia);else d2.stops.push(iulia);
+  }
+  if(d3&&!has(d3,/prejmer/i))d3.stops.push(S({t:"Prejmer Fortified Church",c:"church",w:"Prejmer fortified church",tag:"Saxon church",a:d3.area,q:"Prejmer fortified church, Romania",d:"The largest fortified church in southeastern Europe (UNESCO) — besieged some 50 times, ringed by thick walls, drawbridges and a warren of storeroom cells. ~17 km from Brașov."}));
+  if(d4){
+    if(!has(d4,/rupea/i))d4.stops.push(S({t:"Rupea Fortress",c:"landmark",w:"Rupea Citadel",tag:"Castle",a:d4.area,q:"Rupea Citadel, Romania",d:"A sprawling medieval citadel spiralling up a basalt outcrop right over the Brașov–Sighișoara road — one of Transylvania's oldest fortifications, nearly free to slot in en route."}));
+    if(!has(d4,/viscri/i))d4.stops.push(S({t:"Viscri",c:"church",w:"Viscri",tag:"Saxon church",a:d4.area,q:"Viscri fortified church, Romania",d:"A postcard UNESCO Saxon village (championed by King Charles) around a whitewashed 12th-century fortified church — deeply rural, time-stood-still Transylvania. A short detour off the road."}));
+    if(!has(d4,/biertan/i))d4.stops.push(S({t:"Biertan Fortified Church",c:"church",w:"Biertan",tag:"Saxon church",a:d4.area,q:"Biertan fortified church, Romania",d:"A dramatic UNESCO fortified church on a hill, wrapped in three rings of walls and nine towers — once seat of the Saxon Lutheran bishops, with a famous 'matrimonial prison.'"}));
+  }
+  if(d5&&!has(d5,/deva/i))d5.stops.push(S({t:"Deva Fortress",c:"landmark",w:"Deva Citadel",tag:"Castle",a:d5.area,q:"Deva Citadel, Romania",d:"A ruined hilltop citadel above Deva, reached by a funicular, with commanding views over the Mureș valley — an easy pairing with nearby Corvin."}));
+  try{localStorage.setItem("romania_add1","1");}catch(e){}
+  save();
+}
+function albanyAdd1(){
+  try{if(localStorage.getItem("albany_v1"))return;}catch(e){}
+  var exists=false;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="albany"){exists=true;break;}}
+  if(!exists){
+    function S(o){return {id:uid(),title:o.t,note:o.n||"",desc:o.d||"",query:o.q||(o.t+", Albany, NY"),wiki:o.w||"",wikiExact:!!o.w,commonsQ:o.cq||o.w||(o.t+" Albany"),cat:o.c||"landmark",img:"",lat:o.lat!=null?o.lat:null,lng:o.lng!=null?o.lng:null,wikiTitle:"",gallery:[],book:o.b||"",booked:false,bookUrl:"",tag:o.tag||"",area:"Albany",done:false,_descLock:true,_geoTried:o.lat!=null};}
+    var trip={id:uid(),name:"Albany",region:"Albany, NY",optionals:[],days:[
+      {id:uid(),label:"Albany Day",area:"Albany",notes:"History, Hamilton & a proper dinner. Capitol tours are free; check the Schuyler Mansion tour schedule ahead; reservations recommended at Cafe Capriccio.",stops:[
+        S({t:"Iron Gate Cafe",n:"Breakfast",c:"food",lat:42.6584,lng:-73.7668,q:"Iron Gate Cafe, 182 Washington Ave, Albany, NY",cq:"Washington Avenue Albany brownstone",d:"Popular breakfast & brunch spot in a converted historic brownstone with a courtyard patio. Fuel up before a day of walking."}),
+        S({t:"New York State Capitol",n:"Morning — free guided tours",w:"New York State Capitol",lat:42.6526,lng:-73.7576,q:"New York State Capitol, Albany, NY",d:"A 32-year build finished in 1899 and never topped with its planned dome. The showstopper is the Million Dollar Staircase — four stories of hand-carved sandstone with hundreds of faces, famous and anonymous, cut into the stone."}),
+        S({t:"Schuyler Mansion",n:"Late morning — guided tours; check schedule ahead",w:"Schuyler Mansion",b:"ticket",lat:42.6417,lng:-73.7626,q:"Schuyler Mansion, 32 Catherine St, Albany, NY",d:"Home of General Philip Schuyler, and the house where Alexander Hamilton married Eliza Schuyler in 1780. Tours cover the family, the Revolution, and the Hamilton connections. Ask about the gash in the staircase railing — said to be from a tomahawk thrown during a 1781 attempt to kidnap General Schuyler."}),
+        S({t:"USS Slater",n:"Afternoon",w:"USS Slater",b:"ticket",lat:42.6437,lng:-73.7457,q:"USS Slater, Broadway & Quay St, Albany, NY",d:"The last WWII destroyer escort still afloat in the U.S., restored to wartime condition. Guided tours take you through gun mounts, crew quarters, and the combat information center."}),
+        S({t:"Fort Orange Brewing",n:"Evening",c:"food",lat:42.6664,lng:-73.7405,q:"Fort Orange Brewing, 450 N Pearl St, Albany, NY",cq:"craft brewery taproom",d:"Laid-back taproom named for the original 1624 Dutch settlement that became Albany. Rotating IPAs, lagers, and usually a food truck outside."}),
+        S({t:"Cafe Capriccio",n:"Dinner — reservations recommended",c:"food",b:"reservation",lat:42.6408,lng:-73.7551,q:"Cafe Capriccio, 49 Grand St, Albany, NY",cq:"Italian restaurant dining",d:"An Albany institution since 1982: old-school, intimate Italian dining in a basement-level room on Grand Street. The kind of place you linger."})
+      ]}
+    ]};
+    state.trips.push(normalize([trip])[0]);
+  }
+  try{localStorage.setItem("albany_v1","1");}catch(e){}
   save();
 }
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
