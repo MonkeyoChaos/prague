@@ -988,11 +988,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();itintimes1();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();itintimes1();day23a();cv1();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();itintimes1();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();itintimes1();day23a();cv1();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1475,6 +1475,46 @@ function itintimes1(){
   apply(ro,/mon 22/i,"07:00",[[/făgăraș|fagaras/i,60,45],[/șinca|sinca/i,25,45],[/transfăgărășan|bâlea|balea/i,55,60],[/poenari/i,90,75],[/curtea de argeș|curtea de arges/i,30,30],[/nf palace/i,150,0]]);
   apply(al,/albany day/i,"09:00",[[/iron gate/i,0,60],[/capitol/i,5,75],[/schuyler/i,10,75],[/slater/i,10,90],[/fort orange/i,10,90],[/capriccio/i,10,120]]);
   try{localStorage.setItem("itintimes1","1");}catch(e){}
+  save();
+}
+function day23a(){
+  try{if(localStorage.getItem("day23a"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){t=state.trips[i];break;}}
+  if(!t){try{localStorage.setItem("day23a","1");}catch(e){}return;}
+  var has=false;for(var i=0;i<t.days.length;i++){if(/tue 23/i.test(t.days[i].label||"")){has=true;break;}}
+  if(!has){
+    var bellu=null;
+    for(var i=0;i<t.days.length;i++){if(/mon 15/i.test(t.days[i].label||"")){
+      for(var j=0;j<t.days[i].stops.length;j++){if(/bellu/i.test(t.days[i].stops[j].title||"")){bellu=t.days[i].stops.splice(j,1)[0];break;}}
+      break;}}
+    if(!bellu){bellu={id:uid(),title:"Bellu Cemetery",note:"",desc:"Bucharest's great Victorian necropolis. Iulia Hașdeu's grave is carved with spiritualist and Masonic symbols — her father designed it, like the Câmpina castle, on instructions he believed came from her.",query:"Bellu Cemetery, Bucharest, Romania",wiki:"Bellu Cemetery",wikiExact:true,commonsQ:"Bellu Cemetery Bucharest",cat:"church",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:"",booked:false,bookUrl:"",tag:"Occult",area:"Bucharest",done:false,_descLock:true};}
+    bellu.note="Opens ~8am — the theme-critical one";bellu.drv=15;bellu.dur=45;
+    var d23={id:uid(),label:"Tue 23 · Bellu & Out",area:"Bucharest",start:"08:30",
+      notes:"The just-in-case morning. The End time below is the truth serum — realistically pick ONE of the extras, two if everything goes perfectly. Hard stops: car back at OTP by 12:00, flight 2:30pm.",
+      stops:[
+        bellu,
+        {id:uid(),title:"Romanian Athenaeum",note:"Quick look — interior access varies (rehearsals)",desc:"Bucharest's gorgeous domed concert hall, the city's architectural crown jewel — circled by columns outside, frescoed inside when you can get in.",query:"Romanian Athenaeum, Bucharest, Romania",wiki:"Romanian Athenaeum",wikiExact:true,commonsQ:"Romanian Athenaeum",cat:"art",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:"",booked:false,bookUrl:"",tag:"",area:"Bucharest",done:false,_descLock:true,drv:20,dur:20},
+        {id:uid(),title:"Village Museum (Dimitrie Gusti)",note:"On the road north — last stop before OTP",desc:"A big open-air park of real traditional houses, churches and windmills relocated from every region of Romania — a walk through the countryside without leaving the city. Conveniently on the airport road.",query:"Dimitrie Gusti National Village Museum, Bucharest, Romania",wiki:"Dimitrie Gusti National Village Museum",wikiExact:true,commonsQ:"Village Museum Bucharest",cat:"park",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:"ticket",booked:false,bookUrl:"",tag:"",area:"Bucharest",done:false,_descLock:true,drv:15,dur:45},
+        {id:uid(),title:"OTP — car return & fly out",note:"Car by 12:00 · flight 2:30pm",desc:"Henri Coandă Airport. Fuel up before returning the car; rental desks want it by noon.",query:"Henri Coanda International Airport, Otopeni, Romania",wiki:"",wikiExact:false,commonsQ:"Henri Coandă International Airport",cat:"daytrip",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:"",booked:false,bookUrl:"",tag:"",area:"Bucharest",done:false,_descLock:true,drv:30,dur:0}
+      ]};
+    var li=-1;for(var i=0;i<t.days.length;i++){if(/lodgings/i.test(t.days[i].label||"")){li=i;break;}}
+    if(li>=0)t.days.splice(li,0,d23);else t.days.push(d23);
+  }
+  try{localStorage.setItem("day23a","1");}catch(e){}
+  save();
+}
+function cv1(){
+  try{if(localStorage.getItem("cv1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){t=state.trips[i];break;}}
+  if(t){for(var i=0;i<t.days.length;i++){if(/mon 15/i.test(t.days[i].label||"")){
+    var d=t.days[i],has=false;
+    for(var j=0;j<d.stops.length;j++){if(/calea victoriei/i.test(d.stops[j].title||""))has=true;}
+    if(!has){
+      d.stops.unshift({id:uid(),title:"Calea Victoriei",note:"Your hotel's street — park, check in, then stroll it south into the Old Town",desc:"Bucharest's grand historic avenue, the spine of the city's 'Little Paris' era — palaces, churches and grand cafés, including the CEC Palace and the Military Circle. The Capitol sits right on it, and its southern blocks walk you straight into Lipscani.",query:"Calea Victoriei, Bucharest, Romania",wiki:"Calea Victoriei",wikiExact:true,commonsQ:"Calea Victoriei Bucharest",cat:"landmark",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:"",booked:false,bookUrl:"",tag:"",area:"Bucharest",done:false,_descLock:true,drv:50,dur:30});
+      for(var j=0;j<d.stops.length;j++){if(/lipscani/i.test(d.stops[j].title||"")){d.stops[j].drv=5;break;}}
+    }
+    break;}}}
+  try{localStorage.setItem("cv1","1");}catch(e){}
   save();
 }
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
