@@ -801,6 +801,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .odir{color:var(--primary);font-weight:600;font-size:12px}
   .pin.opt{background:#fff !important;transform:none;border-radius:50%;width:24px;height:24px;font-size:13px;color:inherit;box-shadow:0 1px 4px rgba(0,0,0,.3)}
   textarea.field{resize:vertical;min-height:64px;font-family:inherit;line-height:1.4}
+  .sched{background:#fff;border:1px solid #DBE0E4;border-radius:14px;padding:10px 14px;margin-top:10px}
+  .srow{display:flex;align-items:center;gap:10px;padding:7px 2px;font-size:14px}
+  .sdrive{color:#7a8791;font-size:12.5px;padding:2px 2px 2px 26px}
+  .sstop{border-top:1px solid #F0F2F4}
+  .stm{font-weight:800;min-width:64px}
+  .snm{flex:1}
+  .sdu{color:#5A6774;font-size:12.5px;white-space:nowrap}
+  .est{opacity:.62;font-style:italic}
+  .sdone .snm,.sdone .stm{text-decoration:line-through;opacity:.55}
+  .shead,.send{font-weight:800}
+  .slab{min-width:64px}
+  .stime{border:1px solid #DBE0E4;border-radius:8px;padding:4px 8px;font:inherit}
+  .send{border-top:2px solid #E7EAEC}
+  .shint{font-size:11.5px;color:#8a949c;padding:6px 2px 2px}
 
   /* modal */
   .scrim{position:fixed;inset:0;background:rgba(22,32,43,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
@@ -957,14 +971,14 @@ function normStop(s){
     img:s.img||"",lat:(s.lat===0||s.lat)?s.lat:null,lng:(s.lng===0||s.lng)?s.lng:null,
     desc:s.desc||"",wikiTitle:s.wikiTitle||"",gallery:Array.isArray(s.gallery)?s.gallery:[],
     book:s.book||"",booked:!!s.booked,bookUrl:s.bookUrl||"",
-    tag:s.tag||"",area:s.area||"",wikiExact:!!s.wikiExact,commonsQ:s.commonsQ||"",done:!!s.done};
+    tag:s.tag||"",area:s.area||"",wikiExact:!!s.wikiExact,commonsQ:s.commonsQ||"",drv:(s.drv===0||s.drv)?s.drv:null,dur:(s.dur===0||s.dur)?s.dur:null,done:!!s.done};
 }
 function normalize(trips){
   return (trips||[]).map(function(t){
     return {id:t.id||uid(),name:t.name||"Untitled trip",region:t.region||"",
       optionals:(t.optionals||[]).map(normStop),
       days:(t.days||[]).map(function(d){
-        return {id:d.id||uid(),label:d.label||"Day",area:d.area||"",notes:d.notes||"",
+        return {id:d.id||uid(),label:d.label||"Day",area:d.area||"",notes:d.notes||"",start:d.start||"",
           stops:(d.stops||[]).map(normStop)};
       })};
   });
@@ -974,11 +988,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();itintimes1();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();itintimes1();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1443,6 +1457,26 @@ function rebuild8(){
   try{localStorage.setItem("romania8_v1","1");}catch(e){}
   save();
 }
+function itintimes1(){
+  try{if(localStorage.getItem("itintimes1"))return;}catch(e){}
+  function apply(t,dayRe,start,rows){
+    if(!t)return;var d=null;for(var i=0;i<t.days.length;i++){if(dayRe.test(t.days[i].label||"")){d=t.days[i];break;}}
+    if(!d)return;d.start=start;
+    rows.forEach(function(r){for(var i=0;i<d.stops.length;i++){var s=d.stops[i];if(r[0].test(s.title||"")){s.drv=r[1];s.dur=r[2];break;}}});
+  }
+  var ro=null,al=null;for(var i=0;i<state.trips.length;i++){var n=(state.trips[i].name||"").toLowerCase();if(n==="romania")ro=state.trips[i];if(n==="albany")al=state.trips[i];}
+  apply(ro,/mon 15/i,"16:00",[[/bellu/i,45,45],[/lipscani/i,15,90],[/curtea veche/i,5,30],[/stavropoleos/i,5,20],[/capitol/i,10,0]]);
+  apply(ro,/tue 16/i,"08:00",[[/parliament/i,10,90],[/snagov/i,45,45],[/hașdeu|hasdeu/i,60,60],[/peleș|peles/i,35,90],[/cran/i,50,0]]);
+  apply(ro,/wed 17/i,"08:30",[[/bran castle/i,40,90],[/zărnești|zarnesti/i,20,105],[/râșnov|rasnov/i,25,60],[/prejmer/i,40,45],[/tâmpa|tampa/i,20,90],[/cran/i,10,0]]);
+  apply(ro,/thu 18/i,"08:30",[[/seven ladders/i,20,120],[/piatra mare/i,0,240],[/cran/i,20,0]]);
+  apply(ro,/fri 19/i,"09:00",[[/rupea/i,60,45],[/viscri/i,25,60],[/biertan/i,70,60],[/sighișoara|sighisoara/i,40,240],[/krauss/i,5,0]]);
+  apply(ro,/sat 20/i,"09:00",[[/corvin/i,160,120],[/deva fortress/i,20,75],[/venus/i,5,0]]);
+  apply(ro,/sun 21/i,"08:00",[[/sarmizegetusa/i,75,120],[/colț|colt/i,50,90],[/densuș|densus/i,15,30],[/sibiu/i,135,120],[/am ring/i,2,0]]);
+  apply(ro,/mon 22/i,"07:00",[[/făgăraș|fagaras/i,60,45],[/șinca|sinca/i,25,45],[/transfăgărășan|bâlea|balea/i,55,60],[/poenari/i,90,75],[/curtea de argeș|curtea de arges/i,30,30],[/nf palace/i,150,0]]);
+  apply(al,/albany day/i,"09:00",[[/iron gate/i,0,60],[/capitol/i,5,75],[/schuyler/i,10,75],[/slater/i,10,90],[/fort orange/i,10,90],[/capriccio/i,10,120]]);
+  try{localStorage.setItem("itintimes1","1");}catch(e){}
+  save();
+}
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
 function day(){var t=trip();if(!t)return null;if(ui.dayIdx>t.days.length-1)ui.dayIdx=Math.max(0,t.days.length-1);return t.days[ui.dayIdx];}
 
@@ -1689,12 +1723,13 @@ function renderBody(){
   body.innerHTML="";
   body.appendChild(renderMapCard());
   var seg=el('<div class="seg"></div>');
-  [["stops","▤ Stops"],["route","➟ Route"]].forEach(function(p){
+  [["stops","▤ Stops"],["sched","🕑 Itinerary"],["route","➟ Route"]].forEach(function(p){
     var b=el('<button class="'+(ui.mode===p[0]?"on":"")+'">'+p[1]+'</button>');
     b.onclick=function(){ui.mode=p[0];renderBody();};seg.appendChild(b);
   });
   body.appendChild(seg);
   if(ui.mode==="stops"){body.appendChild(renderNotes());body.appendChild(renderStops());body.appendChild(renderAdd());body.appendChild(renderOptional());}
+  else if(ui.mode==="sched"){body.appendChild(renderNotes());body.appendChild(renderSched());}
   else body.appendChild(renderRoute());
   updateMap();
 }
@@ -1884,7 +1919,8 @@ function editFields(s){
     +'<textarea class="field ef-desc" rows="3" placeholder="Description (shown when expanded — auto-filled if left blank)">'+escapeHtml(s.desc||"")+'</textarea>'
     +'<input class="field small ef-query" placeholder="Map search (defaults to name)" value="'+escapeHtml(s.query)+'">'
     +'<input class="field small ef-img" placeholder="Photo URL (auto-fetched if left blank)" value="'+escapeHtml(s.img)+'">'
-    +'<input class="field small ef-bookurl" placeholder="Booking / tickets URL (optional)" value="'+escapeHtml(s.bookUrl||"")+'">';
+    +'<input class="field small ef-bookurl" placeholder="Booking / tickets URL (optional)" value="'+escapeHtml(s.bookUrl||"")+'">'
+    +'<div class="row" style="gap:8px"><input class="field small ef-drv" type="number" min="0" placeholder="Travel from prev (min)" value="'+(s.drv==null?"":s.drv)+'"><input class="field small ef-dur" type="number" min="0" placeholder="Time at stop (min)" value="'+(s.dur==null?"":s.dur)+'"></div>';
 }
 function bookPicker(sel){
   var opts=[["","None"],["ticket","\ud83c\udf9f Ticket"],["reservation","\ud83d\udcc5 Reservation"]];
@@ -1924,6 +1960,9 @@ function openEdit(card,s,d,t){
     var query=pad.querySelector(".ef-query").value.trim()||title;
     var img=pad.querySelector(".ef-img").value.trim();
     var bookUrl=pad.querySelector(".ef-bookurl").value.trim();
+    var drvV=pad.querySelector(".ef-drv").value.trim();var durV=pad.querySelector(".ef-dur").value.trim();
+    s.drv=(drvV==="")?null:Math.max(0,parseInt(drvV,10)||0);
+    s.dur=(durV==="")?null:Math.max(0,parseInt(durV,10)||0);
     var queryChanged=(query!==s.query);
     s.title=title;s.note=note;s.query=query;s.cat=cp._sel;s.img=img;s.desc=desc;s.wiki=query;
     s.book=bp._sel;if(!s.book)s.booked=false;s.bookUrl=bookUrl;
@@ -1959,8 +1998,9 @@ function renderAdd(){
       var query=pad.querySelector(".ef-query").value.trim()||title;
       var img=pad.querySelector(".ef-img").value.trim();
       var bookUrl=pad.querySelector(".ef-bookurl").value.trim();
+      var drvV=pad.querySelector(".ef-drv").value.trim();var durV=pad.querySelector(".ef-dur").value.trim();
       var locked=!!(img||desc);
-      d.stops.push({id:uid(),title:title,note:note,desc:desc,query:query,wiki:query,cat:cp._sel,img:img,book:bp._sel,booked:false,bookUrl:bookUrl,lat:null,lng:null,done:false,_wikiTried:locked,_locked:locked});
+      d.stops.push({id:uid(),title:title,note:note,desc:desc,query:query,wiki:query,cat:cp._sel,img:img,book:bp._sel,booked:false,bookUrl:bookUrl,lat:null,lng:null,done:false,drv:(drvV==="")?null:Math.max(0,parseInt(drvV,10)||0),dur:(durV==="")?null:Math.max(0,parseInt(durV,10)||0),_wikiTried:locked,_locked:locked});
       save();render();updateMap();enrich();
     };
     cancel.onclick=function(){render();};
@@ -2071,6 +2111,30 @@ function enableDrag(list,d){
       document.addEventListener("pointercancel",up,true);
     });
   });
+}
+function parseHM(v){var m=/^(\d{1,2}):(\d{2})$/.exec(v||"");if(!m)return 540;return parseInt(m[1],10)*60+parseInt(m[2],10);}
+function tmt(t){t=((t%1440)+1440)%1440;var h=Math.floor(t/60),mm=t%60,ap=h>=12?"pm":"am",hh=h%12;if(hh===0)hh=12;return hh+":"+("0"+mm).slice(-2)+ap;}
+function dfmt(m){if(m>=60){var h=Math.floor(m/60),r=m%60;return h+"h"+(r?("0"+r).slice(-2):"");}return m+"m";}
+function renderSched(){
+  var d=day();if(!d)return el('<div></div>');
+  var wrap=el('<div class="sched"></div>');
+  var head=el('<div class="srow shead"><span class="slab">Start</span></div>');
+  var inp=el('<input type="time" class="stime" value="'+escapeHtml(d.start||"09:00")+'">');
+  inp.onchange=function(){d.start=inp.value||"09:00";save();renderBody();};
+  head.appendChild(inp);wrap.appendChild(head);
+  if(!d.stops.length){wrap.appendChild(el('<div class="empty" style="padding:14px 4px">No stops on this day.</div>'));return wrap;}
+  var t=parseHM(d.start||"09:00");
+  d.stops.forEach(function(s){
+    var aD=(s.drv==null),aT=(s.dur==null);
+    var drv=aD?15:s.drv, dur=aT?60:s.dur;
+    if(drv>0)wrap.appendChild(el('<div class="srow sdrive'+(aD?" est":"")+'">↓ '+(aD?"~":"")+dfmt(drv)+' travel</div>'));
+    t+=drv;
+    wrap.appendChild(el('<div class="srow sstop'+(s.done?" sdone":"")+'"><span class="stm">'+tmt(t)+'</span><span class="snm">'+escapeHtml(s.title)+'</span><span class="sdu'+(aT?" est":"")+'">'+(aT?"~":"")+dfmt(dur)+'</span></div>'));
+    t+=dur;
+  });
+  wrap.appendChild(el('<div class="srow send"><span class="slab">End</span><span class="stm">'+tmt(t)+'</span></div>'));
+  wrap.appendChild(el('<div class="shint">Times marked ~ are defaults — set real ones with each stop\u2019s ✎ (travel &amp; time-at-stop fields).</div>'));
+  return wrap;
 }
 function renderRouteIfNeeded(){if(ui.mode==="route")renderBody();}
 function refreshTabsCounts(){/* counts unaffected by reorder */}
