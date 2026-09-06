@@ -865,7 +865,8 @@ var CATS={
   church:{label:"Church",emoji:"⛪",color:"#7A6A55",tint:"#EFEBE3"},
   view:{label:"View / Tower",emoji:"🗼",color:"#2F6DAA",tint:"#E7EFF7"},
   daytrip:{label:"Day trip",emoji:"🚆",color:"#C25A3A",tint:"#F7E9E3"},
-  shopping:{label:"Shopping",emoji:"🛍️",color:"#B0567F",tint:"#F7E6EF"}
+  shopping:{label:"Shopping",emoji:"🛍️",color:"#B0567F",tint:"#F7E6EF"},
+  hotel:{label:"Hotel",emoji:"🛏️",color:"#4A5A8A",tint:"#E8EBF4"}
 };
 var CAT_KEYS=Object.keys(CATS);
 
@@ -973,11 +974,11 @@ function load(){
   try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);
     if(d&&d.trips&&d.trips.length){state.trips=normalize(d.trips);
       state.activeId=d.trips.some(function(t){return t.id===d.activeId})?d.activeId:state.trips[0].id;
-      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();return;}}
+      maybeReseed();seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();return;}}
   }catch(e){}
   state.trips=normalize([seedPrague()]);state.activeId=state.trips[0].id;
   try{localStorage.setItem("seed_version",String(SEED_VERSION));}catch(e){}
-  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();
+  seedBookFlags();tidy1();fixNovy();fixgeo1();fixdesc1();fixphoto1();restructure1();addRomania();romaniaAdd1();albanyAdd1();lodgings1();rebuild8();
 }
 function maybeReseed(){
   var v=0;try{v=parseInt(localStorage.getItem("seed_version")||"0",10);}catch(e){}
@@ -1345,6 +1346,101 @@ function albanyAdd1(){
     state.trips.push(normalize([trip])[0]);
   }
   try{localStorage.setItem("albany_v1","1");}catch(e){}
+  save();
+}
+function lodgings1(){
+  try{if(localStorage.getItem("lodgings1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){t=state.trips[i];break;}}
+  if(!t){try{localStorage.setItem("lodgings1","1");}catch(e){}return;}
+  var exists=false;for(var i=0;i<t.days.length;i++){if(/lodgings/i.test(t.days[i].label||"")){exists=true;break;}}
+  if(!exists){
+    function H(o){return {id:uid(),title:o.t,note:o.n||"",desc:o.d||"",query:o.q,wiki:"",wikiExact:false,commonsQ:o.cq||o.t,cat:"hotel",img:"",lat:o.lat!=null?o.lat:null,lng:o.lng!=null?o.lng:null,wikiTitle:"",gallery:[],book:"reservation",booked:true,bookUrl:o.u||"",tag:"",area:"",done:false,_descLock:true,_geoTried:o.lat!=null};}
+    t.days.push({id:uid(),label:"🛏️ Lodgings",area:"",notes:"All six bookings, in trip order. Directions routes to each front door; the booking chip opens the reservation page.",stops:[
+      H({t:"Capitol Hotel",n:"Mon Sep 15 · 1 night · Bucharest",q:"Capitol Hotel, Calea Victoriei 29, Bucharest, Romania",u:"https://www.booking.com/hotel/ro/capitol-bucharest.html",cq:"Hotel Capitol București Calea Victoriei",d:"1901 building with its original décor, ~10 min walk to the Old Town. Guests report parking out front, with staff helping secure a spot."}),
+      H({t:"Casa Cranța",n:"Tue–Thu Sep 16–18 · 3 nights · Brașov",q:"Casa Cranța, Strada Maior Ion Cranța 3A, Brașov, Romania",u:"https://www.booking.com/searchresults.html?ss=Casa+Cranta+Brasov",cq:"Casa Cranța Brașov",lat:45.647676,lng:25.5960651,d:"4★ guesthouse-hotel in a 1930s Brâncovenesc mini-castle on the hillside — buffet breakfast, panoramic terrace, ~10 min walk down to Council Square. Free but LIMITED first-come parking: message them that you're arriving by car. They can pack a lunch for the Piatra Mare hike day."}),
+      H({t:"Casa Georgius Krauss",n:"Fri Sep 19 · 1 night · Sighișoara citadel",q:"Casa Georgius Krauss, Strada Bastionului 11, Sighișoara, Romania",u:"https://www.booking.com/searchresults.html?ss=Casa+Georgius+Krauss+Sighisoara",cq:"Sighișoara citadel",d:"UNESCO-listed merchant house from ~1600 inside the citadel walls, 2 min from the square — ask about the Fresco Room (original ~1600 wall paintings). Valet takes the car to public parking below the walls; give them your arrival time."}),
+      H({t:"Villa Venus",n:"Sat Sep 20 · 1 night · Deva",q:"Villa Venus Hotel, Strada Mihai Eminescu 16, Deva, Romania",u:"https://www.booking.com/searchresults.html?ss=Villa+Venus+Deva",cq:"Deva citadel view",lat:45.879328,lng:22.899434,d:"Comfortable villa on the fortress side of town — big rooms (some with citadel views), garden, on-site parking, ~1 km walk to the fortress cable car for the evening run up."}),
+      H({t:"Hotel Am Ring",n:"Sun Sep 21 · 1 night · Sibiu",q:"Hotel Am Ring, Piața Mare 14, Sibiu, Romania",u:"https://www.booking.com/searchresults.html?ss=Hotel+Am+Ring+Sibiu",cq:"Piața Mare Sibiu",d:"Restored Gothic-era house directly on Piața Mare, opposite the Brukenthal — square-view room requested. Only ~4 hotel spots; Sunday street parking at the zone's edge is the fallback. Early getaway Monday 7am."}),
+      H({t:"NF Palace Old City",n:"Mon Sep 22 · 1 night · Bucharest",q:"NF Palace Old City, Strada Ion Ghica 4, Bucharest, Romania",u:"https://www.booking.com/hotel/ro/nf-palace-old-city-bucharest-bucuresti.html",cq:"Bucharest Stock Exchange Palace",d:"Rooms inside the 1911 Bucharest Stock Exchange Palace, in the Old Town. The entrance at Ion Ghica 4 isn't obvious — the hotel is upstairs in a shared building. Check-in until 23:30 (call ahead for the late arrival); public paid lot ~1 min away (~4 RON/hr). Car back at OTP by noon on the 23rd."})
+    ]});
+  }
+  try{localStorage.setItem("lodgings1","1");}catch(e){}
+  save();
+}
+function rebuild8(){
+  try{if(localStorage.getItem("romania8_v1"))return;}catch(e){}
+  var t=null;for(var i=0;i<state.trips.length;i++){if((state.trips[i].name||"").toLowerCase()==="romania"){t=state.trips[i];break;}}
+  if(!t){try{localStorage.setItem("romania8_v1","1");}catch(e){}return;}
+  /* harvest existing stops so fetched photos/coords carry over */
+  var old=[];t.days.forEach(function(d){d.stops.forEach(function(s){old.push(s);});});(t.optionals||[]).forEach(function(s){old.push(s);});
+  function findOld(title){var k=title.toLowerCase();for(var i=0;i<old.length;i++){var o=(old[i].title||"").toLowerCase();if(o===k||o.indexOf(k)>=0||k.indexOf(o)>=0)return old[i];}return null;}
+  var lodgeDay=null;for(var i=0;i<t.days.length;i++){if(/lodgings/i.test(t.days[i].label||"")){lodgeDay=t.days[i];break;}}
+  function hotelClone(nameRe,note){
+    if(!lodgeDay)return null;
+    for(var i=0;i<lodgeDay.stops.length;i++){if(nameRe.test(lodgeDay.stops[i].title||"")){
+      var c=JSON.parse(JSON.stringify(lodgeDay.stops[i]));c.id=uid();c.done=false;if(note)c.note=note;return c;}}
+    return null;
+  }
+  function S(o){
+    var s={id:uid(),title:o.t,note:o.n||"",desc:o.d||"",query:o.q||(o.t+", Romania"),wiki:o.w||"",wikiExact:!!o.w,commonsQ:o.cq||o.w||o.t,cat:o.c||"landmark",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:o.b||"",booked:false,bookUrl:"",tag:o.tag||"",area:o.a||"",done:false,_descLock:true};
+    var h=findOld(o.t)||(o.alt?findOld(o.alt):null);
+    if(h){if(h.img)s.img=h.img;if(h.lat!=null){s.lat=h.lat;s.lng=h.lng;s._geoTried=true;}if(h.wikiTitle)s.wikiTitle=h.wikiTitle;if(h.gallery&&h.gallery.length)s.gallery=h.gallery;if(h.booked)s.booked=true;}
+    return s;
+  }
+  function D(label,area,notes,arr,hotel){var stops=arr.map(function(o){o.a=area;return S(o);});if(hotel)stops.push(hotel);return {id:uid(),label:label,area:area,notes:notes||"",stops:stops};}
+  var days=[
+    D("Mon 15 · Bucharest","Bucharest","Land, grab the car, easy evening on foot from the Capitol.",[
+      {t:"Bellu Cemetery",c:"church",tag:"Occult",cq:"Bellu Cemetery Bucharest",w:"Bellu Cemetery",n:"If you land in time — closes ~5pm",d:"Bucharest's great Victorian necropolis. Iulia Hașdeu's grave is carved with spiritualist and Masonic symbols — her father designed it, like the Câmpina castle, on instructions he believed came from her."},
+      {t:"Old Town (Lipscani)",w:"Lipscani",q:"Lipscani, Bucharest, Romania",d:"Bucharest's lively historic core — a maze of restored 19th-century streets full of bars, cafés and old merchant houses."},
+      {t:"Curtea Veche (Old Princely Court)",tag:"Dracula",w:"Curtea Veche",q:"Curtea Veche, Bucharest, Romania",d:"The ruins of the 15th-century royal court of Wallachia — Vlad the Impaler's actual seat of power, with a bust of the prince outside."},
+      {t:"Stavropoleos Monastery",c:"church",w:"Stavropoleos Monastery",q:"Stavropoleos Monastery, Bucharest, Romania",d:"A tiny, exquisitely carved 1720s Orthodox church tucked in the Old Town — gilded interior, serene courtyard, beautiful Byzantine chant."}
+    ],hotelClone(/capitol/i,"Tonight's base · Calea Victoriei 29")),
+    D("Tue 16 · → Brașov","Bucharest → Brașov","Book the Parliament tour ahead (passport needed). Long linear day north — Bucegi cable car sits in the Optional section if weather and time smile.",[
+      {t:"Palace of the Parliament",b:"ticket",w:"Palace of the Parliament",q:"Palace of the Parliament, Bucharest, Romania",d:"Ceaușescu's colossal 1980s folly in marble — the world's heaviest building; guided tours cover a fraction of its 1,100 rooms."},
+      {t:"Snagov Monastery",c:"church",tag:"Dracula",w:"Snagov Monastery",q:"Snagov Monastery, Romania",d:"An island monastery on Lake Snagov, ~40 min north of Bucharest — traditionally held to be the burial place of Vlad the Impaler."},
+      {t:"Iulia Hașdeu Castle",alt:"Iulia Hașdeu Castle (Câmpina)",b:"ticket",tag:"Occult",w:"Iulia Hasdeu Castle",q:"Iulia Hașdeu Castle, Câmpina, Romania",d:"A spiritualist 'temple' built in the 1890s from plans Bogdan Hașdeu said his dead daughter dictated during séances — occult and Masonic symbols throughout, séance room upstairs. Right on the DN1."},
+      {t:"Peleș Castle",b:"ticket",w:"Peleș Castle",q:"Peleș Castle, Sinaia, Romania",d:"A storybook German-Renaissance royal palace in the Carpathian foothills at Sinaia — one of Europe's most beautiful castles."}
+    ],hotelClone(/cran/i,"Base for 3 nights · message them you're arriving by car")),
+    D("Wed 17 · Bran & Around","Brașov & Bran","All short hops — castles in the morning, gorge in the afternoon, Tâmpa if the legs say yes.",[
+      {t:"Bran Castle",b:"ticket",tag:"Dracula",w:"Bran Castle",q:"Bran Castle, Romania",d:"The clifftop castle marketed worldwide as 'Dracula's Castle' — dramatic and fun, though the real Vlad link is thin. Go at opening."},
+      {t:"Zărnești Gorge",c:"park",tag:"Hike",cq:"Prăpăstiile Zărneștiului",q:"Zarnesti Gorge, Zarnesti, Romania",d:"A walk between sheer limestone walls into Piatra Craiului National Park — easy–moderate on the gorge floor, ~1.5–2h. Twenty minutes from Bran."},
+      {t:"Râșnov Citadel",tag:"Castle",w:"Râșnov Citadel",q:"Râșnov Citadel, Romania",d:"A hilltop peasant-fortress above the Bran corridor with sweeping valley views."},
+      {t:"Prejmer Fortified Church",c:"church",tag:"Saxon church",w:"Prejmer fortified church",q:"Prejmer fortified church, Romania",d:"The largest fortified church in southeastern Europe (UNESCO) — besieged ~50 times; drawbridges, hidden passages, storeroom cells in the walls."},
+      {t:"Tâmpa",c:"view",tag:"Hike",cq:"Tâmpa Brașov",q:"Tampa, Brasov, Romania",n:"Evening, if legs allow",d:"The forested ridge over Brașov's old town — about an hour up the zig-zag trail (or the cable car) for the postcard view of the red roofs."}
+    ],hotelClone(/cran/i,"Night 2 of 3")),
+    D("Thu 18 · Hike Day","Brașov & Bran","Full hike day: ~6–7h on foot, ~1,000 m of gain, out via a different descent. No gear needed — ladders, good shoes, water. Ask Cranța for a packed lunch.",[
+      {t:"Seven Ladders Canyon",c:"park",tag:"Hike",cq:"Canionul Șapte Scări",q:"Canionul Sapte Scari, Romania",d:"Seven waterfalls climbed on bolted metal ladders through a narrow limestone slot — the spectacular front door of the day. ~20 min drive from Brașov."},
+      {t:"Piatra Mare peak",c:"view",tag:"Hike",cq:"Piatra Mare Romania",q:"Piatra Mare, Romania",d:"Continue past the canyon up to the 1,843 m summit — big views over the Bucegi and Brașov depression. ~6–7h round trip."}
+    ],hotelClone(/cran/i,"Night 3 of 3")),
+    D("Fri 19 · Saxon Road","Saxon road","Fortified-church country, ending inside the citadel — Krauss's valet takes the car below the walls. Give them your arrival time.",[
+      {t:"Rupea Fortress",tag:"Castle",w:"Rupea Citadel",q:"Rupea Citadel, Romania",d:"A ruined citadel spiralling up a basalt outcrop right over the highway — one of Transylvania's oldest fortifications."},
+      {t:"Viscri",c:"church",tag:"Saxon church",w:"Viscri",q:"Viscri fortified church, Romania",d:"A frozen-in-time UNESCO Saxon village around a whitewashed 12th-century fortified church — King Charles famously owns a house here."},
+      {t:"Biertan Fortified Church",c:"church",tag:"Saxon church",w:"Biertan",q:"Biertan fortified church, Romania",d:"The grandest of the fortified churches — three rings of walls, nine towers, and the famous 'matrimonial prison' cell."},
+      {t:"Sighișoara Citadel",tag:"Dracula",w:"Sighișoara",q:"Sighișoara, Romania",n:"Afternoon + the citadel after dark",d:"A perfectly preserved medieval citadel (UNESCO) — and the birthplace of Vlad the Impaler, whose house still stands. Tonight it's yours after the buses leave."}
+    ],hotelClone(/krauss/i,"Tonight's base · inside the walls · ask about the Fresco Room")),
+    D("Sat 20 · Corvin & Deva","Corvin","~2h40 morning drive west from the citadel.",[
+      {t:"Corvin Castle",b:"ticket",tag:"Dracula",w:"Corvin Castle",q:"Corvin Castle, Hunedoara, Romania",d:"Romania's great Gothic castle — drawbridge over a gorge, forest of spiked towers — where legend says Vlad was held prisoner. The ghost lore is thick."},
+      {t:"Deva Fortress",tag:"Castle",w:"Deva Citadel",q:"Deva Citadel, Romania",n:"Funicular up — an evening run from the hotel works",d:"A ruined hilltop citadel with commanding Mureș-valley views, a 3-minute funicular ride above your hotel town."}
+    ],hotelClone(/venus/i,"Tonight's base · fortress side of town")),
+    D("Sun 21 · Dacian Ruins","Hațeg country","Forest roads in the morning, ~2h15 east to Sibiu at day's end.",[
+      {t:"Sarmizegetusa Regia",b:"ticket",tag:"Dacian",w:"Sarmizegetusa Regia",q:"Sarmizegetusa Regia, Romania",d:"The capital of ancient Dacia (UNESCO), hidden at ~1,200 m in Carpathian forest — circular stone sanctuaries, a paved sacred road, walls swallowed by trees. Trails lead on from the ruins."},
+      {t:"Colț Fortress",tag:"Hike",cq:"Cetatea Colț",q:"Cetatea Colt, Romania",d:"A 30–45 min forest hike up to the ruined 14th-century keep said to have inspired Jules Verne's 'The Carpathian Castle' — the fortified Colț Monastery sits at its base."},
+      {t:"Densuș Church",c:"church",w:"Densuș Church",q:"Densus Church, Romania",d:"One of Romania's oldest churches, assembled centuries ago out of scavenged Roman ruins — altar set on Roman tombstones. Deeply strange, quick to see."},
+      {t:"Sibiu Old Town",w:"Sibiu",q:"Sibiu, Romania",n:"Evening",d:"Cobbled squares, pastel facades, and the city's famous rooftop 'eyes' — dinner on Piața Mare, steps from tonight's bed."}
+    ],hotelClone(/am ring/i,"Tonight's base · on the square · square-view room requested")),
+    D("Mon 22 · Transfăgărășan","Transfăgărășan","7am start MANDATORY — ~7h35 of driving. Road open ~7am–9pm, weather-dependent: check status, and CONFIRM POENARI IS OPEN before the climb (bear closures). Tomorrow: car back at OTP by noon, flight 2:30pm.",[
+      {t:"Făgăraș Citadel",tag:"Castle",w:"Făgăraș Citadel",q:"Făgăraș Citadel, Romania",d:"A big moated fortress in Făgăraș town — a brisk morning stop before doubling back to the mountain turnoff."},
+      {t:"Șinca Veche",c:"church",tag:"Occult",cq:"Șinca Veche",q:"Sinca Veche monastery, Romania",d:"The 'Temple of Destiny' — a rock-cut cave sanctuary of disputed age in a forested hillside, with an unexplained Star-of-David-and-yin-yang carving. Short forest walk in."},
+      {t:"Transfăgărășan / Bâlea Lake",c:"view",w:"Transfăgărășan",q:"Bâlea Lake, Romania",d:"The great Carpathian road — hairpins, tunnels, and the glacial lake at 2,000 m. Fuel up in the valley; mind the bears; the descent is slow and spectacular."},
+      {t:"Poenari Castle",b:"ticket",tag:"Dracula",w:"Poenari Castle",q:"Poenari Castle, Romania",n:"1,480 steps — VERIFY OPEN before climbing",d:"The real fortress of Vlad the Impaler, on a cliff over the Argeș — its ghosts, legend says, are the boyars he worked to death building it. Closes on short notice for bear activity."},
+      {t:"Curtea de Argeș Monastery",c:"church",w:"Curtea de Argeș Monastery",q:"Curtea de Argeș Monastery, Romania",d:"The swirling, jewel-box royal necropolis church — a fine last stop on the run south."}
+    ],hotelClone(/nf palace/i,"Final night · Old Town · check-in by 23:30, call ahead"))
+  ];
+  var newDays=days;
+  if(lodgeDay)newDays=days.concat([lodgeDay]);
+  t.days=newDays;
+  t.optionals=[{id:uid(),title:"Bucegi: Sphinx & Babele",note:"Optional — weather audible",desc:"Cable car from Bușteni to the ~2,200 m plateau, then easy walking between the Sphinx and Babele rock formations (~15 min apart; extend to the Caraiman Cross for a 2–3h wander). Queue- and weather-dependent — a bluebird-day audible.",query:"Bușteni cable car, Romania",wiki:"",wikiExact:false,commonsQ:"Sphinx Bucegi",cat:"view",img:"",lat:null,lng:null,wikiTitle:"",gallery:[],book:"",booked:false,bookUrl:"",tag:"Hike",area:"Bucharest → Brașov",done:false,_descLock:true}];
+  try{localStorage.setItem("romania8_v1","1");}catch(e){}
   save();
 }
 function trip(){for(var i=0;i<state.trips.length;i++)if(state.trips[i].id===state.activeId)return state.trips[i];return null;}
